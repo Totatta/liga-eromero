@@ -447,7 +447,7 @@ function vTips(){
         return `<span class="bko${v&&v.ev*100>=valueMin?' val':''}" title="${esc(b[1])}">${['1','X','2'][n]} ${dec(b[0])}</span>`}).join(' ')}
         ${o.best.o?`<span class="bko${vb.find(z=>z.k==='o'&&z.ev*100>=valueMin)?' val':''}" title="${esc(o.best.o[1])}">+2,5 ${dec(o.best.o[0])}</span>`:''}
         ${o.best.u?`<span class="bko${vb.find(z=>z.k==='u'&&z.ev*100>=valueMin)?' val':''}" title="${esc(o.best.u[1])}">−2,5 ${dec(o.best.u[0])}</span>`:''}</div>`:'';
-    const vl=x.vals.length?`<div class="vl">${x.vals.sort((a,b)=>b.ev-a.ev).map(v=>`<div><b>${v.lab}</b> @ ${dec(v.odds)} <span class="muted">(${esc(v.book)})</span> · modell ${pc1(v.p)} → <b class="up">${sgnPct(v.ev)}</b></div>`).join('')}</div>`:'';
+    const vl=x.vals.length?`<div class="vl">${x.vals.sort((a,b)=>b.ev-a.ev).map(v=>`<div><b>${v.lab}</b> @ ${dec(v.odds)}-${pc1(1/v.odds)} <span class="muted">(${esc(v.book)})</span> · modell ${od(v.p)}-${pc1(v.p)} → <b class="up">${v.odds-1/v.p>=0?'+':'−'}${dec(Math.abs(v.odds-1/v.p))} (${sgnPct(v.ev)})</b></div>`).join('')}</div>`:'';
     html+=`<div class="tip clickable" data-pair="${r[1]}_${r[2]}" data-lg="${x.lg}" role="button" tabindex="0">
       <div class="tm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}${tipsAll?`<span class="tag">${esc(Mx.L.name)}</span>`:''}${valueOnly?`<span class="tag">${fd(r[0])}</span>`:''}</div>
       <div class="one">1 <b>${pc(p.w)}</b> · X <b>${pc(p.d)}</b> · 2 <b>${pc(p.l)}</b><br><span class="odds">odds ${od(p.w)} · ${od(p.d)} · ${od(p.l)}</span></div>
@@ -464,7 +464,7 @@ function vTips(){
       <button class="btn${tipsAll?' solid':''}" id="tipsAll" aria-pressed="${tipsAll}">Mind az 5 liga</button></div>
     ${valueCtl}
     <p class="small muted">${valueOnly?`Azok a meccsek, ahol a modell esélye × a legjobb irodai szorzó legalább ${valueMin}%-kal 1 felett van, a legnagyobb értékkel kezdve.`:'Minden hátralévő meccs a három legvalószínűbb pontos eredménnyel és azok esélyével, valamint az 1 / X / 2 esélyekkel. Koppints egy meccsre a részletekért.'}</p>
-    <p class="note"><b>Odds</b> = 1 ÷ esély, vagyis a modell szerinti tiszta szorzó, irodai árrés nélkül. <b>Value</b> = modell-esély × irodai szorzó − 1: ennyit nyernél hosszú távon tétenként, ha a modell pontos. Nagy értéknél gyakran inkább a modell téved (sérülés, rotáció), ezért érdemes utánanézni.</p>
+    <p class="note"><b>Odds</b> = 1 ÷ esély, vagyis a modell szerinti tiszta szorzó, irodai árrés nélkül. <b>Value sor</b>: tipp @ irodai szorzó-irodai esély (iroda) · modell szorzó-modell esély → szorzókülönbség (value). A <b>value</b> = modell-esély × irodai szorzó − 1, vagyis ennyit nyernél hosszú távon tétenként, ha a modell pontos. Nagy értéknél gyakran inkább a modell téved (sérülés, rotáció), ezért érdemes utánanézni.</p>
     <div>${html||`<p class="muted">${valueOnly?'Nincs a feltételnek megfelelő tipp. Próbálj kisebb küszöböt.':'Nincs hátralévő meccs.'}</p>`}</div>
     ${rows.length>tipsShow?`<button class="btn" id="tipsMore">További meccsek (${rows.length-tipsShow} van még)</button>`:''}
   </section>`;
