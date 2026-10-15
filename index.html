@@ -25,11 +25,12 @@ header .wrap{padding-block:12px 0;display:grid;gap:10px}
 .brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 h1{font-family:var(--f-disp);font-weight:700;font-size:1.7rem;letter-spacing:.01em;margin:0;line-height:1}
 h1 span{color:var(--accent)}
-.stamp{font-size:.75rem;color:var(--muted);text-align:right}
+.stamp{font-size:.75rem;color:var(--muted);text-align:right;min-width:0;line-height:1.3}
+.brand{flex-wrap:wrap}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
 .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font:600 .9rem var(--f-body);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-nav.tabs{display:flex;gap:2px}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 .tab{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:8px 4px 9px;font:600 1.05rem var(--f-disp);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);cursor:pointer}
 .tab[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -125,10 +126,17 @@ select{font:500 .95rem var(--f-body);color:var(--ink);background:var(--surface);
 .vl{grid-column:1/-1;font-size:.84rem;border-left:3px solid var(--win);padding:3px 0 3px 8px;display:grid;gap:2px}
 .vctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .vctl select{padding:5px 8px}
+.tg{display:flex;flex-wrap:wrap;gap:6px}
+.tgb{display:inline-flex;align-items:center;gap:7px;line-height:1.3;max-width:100%;font:500 .84rem var(--f-body);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;cursor:pointer;text-align:left}
+.tgb b{color:inherit;font-weight:700}
+.tgb .sw{display:inline-flex;flex:0 0 auto}
+.tgb[aria-pressed="true"]{color:var(--ink);border-color:var(--ink);background:var(--soft)}
+.tgb[aria-pressed="false"] svg{opacity:.35}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .tip .sc .num{font-size:1.05rem;letter-spacing:.02em}
 @media (max-width:420px){.tip{grid-template-columns:1fr}.tip .one{text-align:left}}
-.tab{font-size:.98rem}
+.tab{font-size:.98rem;flex:1 0 auto;padding-inline:6px}
+@media (max-width:440px){.tab{font-size:.88rem;letter-spacing:.02em;padding-inline:3px}h1{font-size:1.45rem}}
 .heat{display:inline-block;min-width:2.8em;padding:2px 4px;border-radius:4px;text-align:right}
 @media (prefers-reduced-motion:no-preference){.pbar div,.wdl i{transition:width .3s ease}}
 </style>
@@ -163,6 +171,7 @@ let src = {};                                // honnan jönnek az idei adatok: '
 let fdUpdated = null;                        // a football-data.org fájl frissítési ideje
 let sims = {}, models = {};
 let tipsAll = store.get('tipsAll',false), tipsShow = 40;
+let teamSer = store.get('teamSer',{S:true,A:true,D:true}), matchSer = store.get('matchSer',{str:true,att:true,def:false});
 let ODDS = null;                              // data/odds.json (The Odds API), ha elérhető
 let valueOnly = store.get('valueOnly',false), valueMin = store.get('valueMin',5), tipSort = store.get('tipSort','time'), tipDays = store.get('tipDays',7);
 const oddsCache = {};
@@ -327,23 +336,31 @@ function vRank(){
     ${M.remaining.some(r=>r[0]<TODAY)?`<p class="note"><b>${M.remaining.filter(r=>r[0]<TODAY).length} lejátszott meccs eredménye hiányzik.</b> A Meccsek fülön beírhatod őket, és a rangsor azonnal újraszámolódik.</p>`:''}
   </section>`;
 }
-function svgChart(t){
-  const h=t.hist; if(!h.length) return '<p class="muted small">Még nincs lejátszott meccs.</p>';
-  const pts=[{A:t.start.A,D:t.start.D}].concat(h);
-  const W=640,H=220,pl=40,pr=12,pt=14,pb=26;
-  const vals=pts.flatMap(p=>[p.A,p.D]).concat([1000]);
+/* Vonaldiagram: series = [{vals:[rajt, 1. meccs után, ...], color, dash}] */
+function lineChart(series,label){
+  const len=Math.max(...series.map(s=>s.vals.length));
+  if(len<2) return '<p class="muted small">Még nincs lejátszott meccs.</p>';
+  const W=640,H=300,pl=54,pr=14,pt=16,pb=34,FS=17;
+  const vals=series.flatMap(s=>s.vals).concat([1000]);
   let lo=Math.min(...vals),hi=Math.max(...vals);const pad=Math.max(10,(hi-lo)*.12);lo-=pad;hi+=pad;
   const step=(hi-lo)>160?50:(hi-lo)>80?25:10;
-  const x=i=>pl+(W-pl-pr)*(pts.length===1?0.5:i/(pts.length-1)), y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
-  let g='';for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step){g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"${v===1000?' stroke-dasharray="4 4"':''}/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`}
-  const path=k=>pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p[k]).toFixed(1)).join(' ');
-  const dots=k=>pts.map((p,i)=>i?`<circle cx="${x(i)}" cy="${y(p[k])}" r="${i===pts.length-1?4:2.5}" fill="var(--${k==='A'?'att':'def'})"/>`:'').join('');
-  const xl=h.map((m,i)=>(i%Math.ceil(h.length/8)===0||i===h.length-1)?`<text x="${x(i+1)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${i+1}.</text>`:'').join('');
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Támadó- és védekezőerő alakulása">${g}
-    <path d="${path('A')}" fill="none" stroke="var(--att)" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="${path('D')}" fill="none" stroke="var(--def)" stroke-width="2.5" stroke-linejoin="round"/>${dots('A')}${dots('D')}
-    <text x="${pl}" y="${H-8}" font-size="10.5" fill="var(--muted)" text-anchor="start">rajt</text>${xl}</svg>`;
+  const x=i=>pl+(W-pl-pr)*i/(len-1), y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
+  let g='';for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step){g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"${v===1000?' stroke-dasharray="2 3"':''}/><text x="${pl-8}" y="${y(v)+5}" text-anchor="end" font-size="${FS}" fill="var(--muted)">${v}</text>`}
+  const lines=series.map(s=>{const d=s.vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+    const last=s.vals.length-1;
+    return `<path d="${d}" fill="none" stroke="var(--${s.color})" stroke-width="3" stroke-linejoin="round"${s.dash?' stroke-dasharray="9 6"':''}/>`+
+      s.vals.map((v,i)=>i?`<circle cx="${x(i)}" cy="${y(v)}" r="${i===last?5.5:3}" fill="${s.dash&&i===last?'var(--surface)':'var(--'+s.color+')'}" stroke="var(--${s.color})" stroke-width="${s.dash&&i===last?2.5:0}"/>`:'').join('')}).join('');
+  const n=len-1, ev=Math.ceil(n/8);
+  let xl='';for(let i=1;i<=n;i++) if(i%ev===0||i===n) xl+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="${FS}" fill="var(--muted)">${i}.</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}${lines}
+    <text x="${pl}" y="${H-8}" font-size="${FS}" fill="var(--muted)">rajt</text>${xl}</svg>`;
 }
+const teamSeries=t=>{const pts=[t.start].concat(t.hist);return {A:pts.map(p=>p.A),D:pts.map(p=>p.D),S:pts.map(p=>(p.A+p.D)/2)}};
+const SERCOL={A:'att',D:'def',S:'accent'}, SERNAME={A:'Támadás',D:'Védekezés',S:'Erő'};
+function toggles(group,items,on){
+  return `<div class="tg" role="group">${items.map(([k,lab,html])=>`<button class="tgb" data-tg="${group}" data-k="${k}" aria-pressed="${!!on[k]}"><span class="sw">${html}</span><span>${lab}</span></button>`).join('')}</div>`;
+}
+const swatch=(c,dash)=>`<svg width="22" height="10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--${c})" stroke-width="3"${dash?' stroke-dasharray="5 3"':''}/></svg>`;
 function vTeam(){
   if(state.team===null||!M.byT[state.team]) state.team=M.teams[0].t;
   const t=M.byT[state.team], N=M.n;
@@ -378,8 +395,10 @@ function vTeam(){
     <p class="note">${t.tab.p} meccsen <b>${t.tab.pts} pont</b>, a modell szerint várható ${t.xPts.toFixed(1)} volt (${sgn(t.tab.pts-t.xPts,1)}). Forma az utolsó 5 meccsen: <b class="${dCls(t.form,1)}">${sgn(t.form,1)} pont</b> a vártnál, ${t.form>1?'felszálló ágban van.':t.form<-1?'a vártnál gyengébben megy.':'nagyjából az erejének megfelelően játszik.'}</p>
   </section>
   <section class="sec"><h3>Erő alakulása meccsről meccsre</h3>
-    <div class="chart">${svgChart(t)}</div>
-    <div class="legend"><span class="att">● Támadás</span><span class="def">● Védekezés</span><span>szaggatott vonal: 1000-es kezdőérték</span></div>
+    ${toggles('team',['S','A','D'].map(k=>[k,`${SERNAME[k]} <b class="num">${r0(k==='S'?t.S:t[k])}</b>`,swatch(SERCOL[k])]),teamSer)}
+    <div class="chart">${(()=>{const ts=teamSeries(t),sel=['S','A','D'].filter(k=>teamSer[k]);
+      return sel.length?lineChart(sel.map(k=>({vals:ts[k],color:SERCOL[k]})),'Erő, támadás és védekezés alakulása'):'<p class="muted small" style="padding:20px">Kapcsolj be legalább egy vonalat.</p>'})()}</div>
+    <div class="legend"><span>Erő = a támadás és a védekezés átlaga</span><span>pontozott vonal: 1000-es kezdőérték</span></div>
   </section>
   <section class="sec"><h3>Hasonló ellenfelek ellen</h3><div class="tiers">${tierHtml}</div>
     <p class="small muted">Az ellenfeleket a mostani erősorrend harmadai szerint csoportosítja.</p></section>
@@ -417,6 +436,16 @@ function vMatch(){
       <div style="text-align:right"><div class="num att">${P.l2.toFixed(2)}</div><div class="small muted">várható gól</div></div></div>
     <p class="small muted">${esc(H.name)} támadása ${r0(H.A)} a(z) ${esc(Aw.name)} ${r0(Aw.D)}-as védelme ellen, és fordítva ${r0(Aw.A)} a ${r0(H.D)} ellen. A hazai pálya előnye a liga átlagából jön (${M.muH.toFixed(2)} vs. ${M.muA.toFixed(2)} gól meccsenként).</p>
     <p class="small muted">Az odds a modell szerinti tiszta szorzó (1 ÷ esély), irodai árrés nélkül.</p>
+    <h3>A két csapat ereje meccsről meccsre</h3>
+    ${(()=>{const hs=teamSeries(H),as=teamSeries(Aw);
+      const pairs={att:[{vals:hs.A,color:'att'},{vals:as.D,color:'def',dash:1}],def:[{vals:hs.D,color:'def'},{vals:as.A,color:'att',dash:1}],str:[{vals:hs.S,color:'accent'},{vals:as.S,color:'accent',dash:1}]};
+      const sel=['str','att','def'].filter(k=>matchSer[k]);
+      return toggles('match',[
+        ['str',`Erő <b class="num">${r0(H.S)}</b> vs <b class="num">${r0(Aw.S)}</b>`,swatch('accent')],
+        ['att',`Hazai támadás <b class="num">${r0(H.A)}</b> vs vendég védekezés <b class="num">${r0(Aw.D)}</b>`,swatch('att')+swatch('def',1)],
+        ['def',`Hazai védekezés <b class="num">${r0(H.D)}</b> vs vendég támadás <b class="num">${r0(Aw.A)}</b>`,swatch('def')+swatch('att',1)]],matchSer)+
+        `<div class="chart">${sel.length?lineChart(sel.flatMap(k=>pairs[k]),'A két csapat erejének alakulása'):'<p class="muted small" style="padding:20px">Kapcsolj be legalább egy párosítást.</p>'}</div>
+        <div class="legend"><span>folytonos vonal: ${esc(H.name)} (hazai)</span><span>szaggatott vonal: ${esc(Aw.name)} (vendég)</span><span>vízszintesen: hányadik meccs az idényben</span></div>`})()}
     <h3>Pontos eredmény esélye, %</h3>
     <div class="grid6" aria-label="Hazai gólok soronként, vendég gólok oszloponként">${gridH}</div>
     <p class="small muted">Sor: ${esc(H.name)} góljai · oszlop: ${esc(Aw.name)} góljai</p>
@@ -530,6 +559,7 @@ $('#view').addEventListener('click',e=>{
     state.home=h;state.away=a;state.view='match';store.set('view','match');render();const p=$('#predictor');if(p)p.scrollIntoView({block:'start'});else window.scrollTo({top:0});return}
   if(e.target.id==='tipsAll'){tipsAll=!tipsAll;store.set('tipsAll',tipsAll);tipsShow=40;render();return}
   if(e.target.id==='tipsMore'){tipsShow+=40;render();return}
+  const tg=e.target.closest('[data-tg]');if(tg){const o=tg.dataset.tg==='team'?teamSer:matchSer,k=tg.dataset.k;o[k]=!o[k];store.set(tg.dataset.tg==='team'?'teamSer':'matchSer',o);render();return}
   const sb=e.target.closest('[data-sort]');if(sb){tipSort=sb.dataset.sort;store.set('tipSort',tipSort);tipsShow=40;render();return}
   if(e.target.id==='valueOnly'){valueOnly=!valueOnly;store.set('valueOnly',valueOnly);tipsShow=40;render();return}
   if(e.target.closest('select,label'))return;
