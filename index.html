@@ -345,7 +345,8 @@ function lineChart(series,label){
   let lo=Math.min(...vals),hi=Math.max(...vals);const pad=Math.max(10,(hi-lo)*.12);lo-=pad;hi+=pad;
   const step=(hi-lo)>160?50:(hi-lo)>80?25:10;
   const x=i=>pl+(W-pl-pr)*i/(len-1), y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
-  let g='';for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step){g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"${v===1000?' stroke-dasharray="2 3"':''}/><text x="${pl-8}" y="${y(v)+5}" text-anchor="end" font-size="${FS}" fill="var(--muted)">${v}</text>`}
+  let g='';for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step){if(v===1000)continue;g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-8}" y="${y(v)+5}" text-anchor="end" font-size="${FS}" fill="var(--muted)">${v}</text>`}
+  g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(1000)}" y2="${y(1000)}" stroke="var(--ink)" stroke-width="2.2" stroke-dasharray="10 6" opacity=".75"/><text x="${pl-8}" y="${y(1000)+5}" text-anchor="end" font-size="${FS}" font-weight="700" fill="var(--ink)">1000</text>`;
   const lines=series.map(s=>{const d=s.vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
     const last=s.vals.length-1;
     return `<path d="${d}" fill="none" stroke="var(--${s.color})" stroke-width="3" stroke-linejoin="round"${s.dash?' stroke-dasharray="9 6"':''}/>`+
@@ -398,7 +399,7 @@ function vTeam(){
     ${toggles('team',['S','A','D'].map(k=>[k,`${SERNAME[k]} <b class="num">${r0(k==='S'?t.S:t[k])}</b>`,swatch(SERCOL[k])]),teamSer)}
     <div class="chart">${(()=>{const ts=teamSeries(t),sel=['S','A','D'].filter(k=>teamSer[k]);
       return sel.length?lineChart(sel.map(k=>({vals:ts[k],color:SERCOL[k]})),'Erő, támadás és védekezés alakulása'):'<p class="muted small" style="padding:20px">Kapcsolj be legalább egy vonalat.</p>'})()}</div>
-    <div class="legend"><span>Erő = a támadás és a védekezés átlaga</span><span>pontozott vonal: 1000-es kezdőérték</span></div>
+    <div class="legend"><span>Erő = a támadás és a védekezés átlaga</span><span>vastag fekete szaggatott vonal: 1000-es kezdőérték</span></div>
   </section>
   <section class="sec"><h3>Hasonló ellenfelek ellen</h3><div class="tiers">${tierHtml}</div>
     <p class="small muted">Az ellenfeleket a mostani erősorrend harmadai szerint csoportosítja.</p></section>
