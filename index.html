@@ -125,6 +125,7 @@ select{font:500 .95rem var(--f-body);color:var(--ink);background:var(--surface);
 .vl{grid-column:1/-1;font-size:.84rem;border-left:3px solid var(--win);padding:3px 0 3px 8px;display:grid;gap:2px}
 .vctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .vctl select{padding:5px 8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .tip .sc .num{font-size:1.05rem;letter-spacing:.02em}
 @media (max-width:420px){.tip{grid-template-columns:1fr}.tip .one{text-align:left}}
 .tab{font-size:.98rem}
@@ -163,7 +164,7 @@ let fdUpdated = null;                        // a football-data.org fájl friss�
 let sims = {}, models = {};
 let tipsAll = store.get('tipsAll',false), tipsShow = 40;
 let ODDS = null;                              // data/odds.json (The Odds API), ha elérhető
-let valueOnly = store.get('valueOnly',false), valueMin = store.get('valueMin',5);
+let valueOnly = store.get('valueOnly',false), valueMin = store.get('valueMin',5), tipSort = store.get('tipSort','time'), tipDays = store.get('tipDays',7);
 const oddsCache = {};
 
 /* ---------- matek ---------- */
@@ -430,26 +431,33 @@ function vTips(){
   const lgs=tipsAll?LEAGUES:[state.league], rows=[];
   const hasOdds=!!(ODDS&&ODDS.leagues);
   for(const lg of lgs){const Mx=getM(lg), om=hasOdds?oddsFor(lg,Mx):{};
-    for(const r of Mx.remaining){if(r[0]<TODAY)continue;const p=predict(Mx,r[1],r[2]);
+    const until=tipDays?new Date(Date.now()+tipDays*864e5).toISOString().slice(0,10):'9999';
+    for(const r of Mx.remaining){if(r[0]<TODAY||r[0]>until)continue;const p=predict(Mx,r[1],r[2]);
     const sc=[];for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)sc.push([p.grid[i][j],i,j]);sc.sort((x,y)=>y[0]-x[0]);
     const o=om[r[0]+'|'+r[1]+'|'+r[2]]||null, vb=valueBets(p,o);
     const vals=vb.filter(v=>v.ev*100>=valueMin);
     if(valueOnly&&!vals.length) continue;
     rows.push({lg,Mx,r,p,top:sc.slice(0,3),o,vb,vals})}}
-  if(valueOnly) rows.sort((x,y)=>Math.max(...y.vals.map(v=>v.ev))-Math.max(...x.vals.map(v=>v.ev)));
-  else rows.sort((x,y)=>x.r[0].localeCompare(y.r[0])||LEAGUES.indexOf(x.lg)-LEAGUES.indexOf(y.lg));
+  const bestEv=x=>x.vb.length?Math.max(...x.vb.map(v=>v.ev)):-Infinity;
+  const byTime=(x,y)=>x.r[0].localeCompare(y.r[0])||LEAGUES.indexOf(x.lg)-LEAGUES.indexOf(y.lg);
+  const sortMode=(tipSort==='value'&&!hasOdds)?'time':tipSort;
+  if(sortMode==='score') rows.sort((x,y)=>y.top[0][0]-x.top[0][0]||byTime(x,y));
+  else if(sortMode==='value') rows.sort((x,y)=>bestEv(y)-bestEv(x)||byTime(x,y));
+  else rows.sort(byTime);
+  const grouped=sortMode==='time';
   const shown=rows.slice(0,tipsShow);let html='',lastD='';
   const dn=d=>['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'][new Date(d+'T12:00:00').getDay()];
   for(const x of shown){
-    if(!valueOnly&&x.r[0]!==lastD){lastD=x.r[0];html+=`<div class="tday">${fd(lastD)} <span class="muted">${dn(lastD)}</span></div>`}
+    if(grouped&&x.r[0]!==lastD){lastD=x.r[0];html+=`<div class="tday">${fd(lastD)} <span class="muted">${dn(lastD)}</span></div>`}
     const {p,top,Mx,r,o,vb}=x;
     const bk=o&&o.best?`<div class="bk"><span class="muted">Legjobb irodai szorzó:</span> ${['h','d','a'].map((k,n)=>{const b=o.best[k];if(!b)return '';const v=vb.find(z=>z.k===k);
         return `<span class="bko${v&&v.ev*100>=valueMin?' val':''}" title="${esc(b[1])}">${['1','X','2'][n]} ${dec(b[0])}</span>`}).join(' ')}
         ${o.best.o?`<span class="bko${vb.find(z=>z.k==='o'&&z.ev*100>=valueMin)?' val':''}" title="${esc(o.best.o[1])}">+2,5 ${dec(o.best.o[0])}</span>`:''}
         ${o.best.u?`<span class="bko${vb.find(z=>z.k==='u'&&z.ev*100>=valueMin)?' val':''}" title="${esc(o.best.u[1])}">−2,5 ${dec(o.best.u[0])}</span>`:''}</div>`:'';
-    const vl=x.vals.length?`<div class="vl">${x.vals.sort((a,b)=>b.ev-a.ev).map(v=>`<div><b>${v.lab}</b> @ ${dec(v.odds)}-${pc1(1/v.odds)} <span class="muted">(${esc(v.book)})</span> · modell ${od(v.p)}-${pc1(v.p)} → <b class="up">${v.odds-1/v.p>=0?'+':'−'}${dec(Math.abs(v.odds-1/v.p))} (${sgnPct(v.ev)})</b></div>`).join('')}</div>`:'';
+    const shownV=sortMode==='value'&&!x.vals.length&&x.vb.length?[x.vb.reduce((a,b)=>b.ev>a.ev?b:a)]:x.vals;
+    const vl=shownV.length?`<div class="vl">${shownV.slice().sort((a,b)=>b.ev-a.ev).map(v=>`<div><b>${v.lab}</b> @ ${dec(v.odds)}-${pc1(1/v.odds)} <span class="muted">(${esc(v.book)})</span> · modell ${od(v.p)}-${pc1(v.p)} → <b class="${v.ev>=0?'up':'dn'}">${v.odds-1/v.p>=0?'+':'−'}${dec(Math.abs(v.odds-1/v.p))} (${sgnPct(v.ev)})</b></div>`).join('')}</div>`:'';
     html+=`<div class="tip clickable" data-pair="${r[1]}_${r[2]}" data-lg="${x.lg}" role="button" tabindex="0">
-      <div class="tm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}${tipsAll?`<span class="tag">${esc(Mx.L.name)}</span>`:''}${valueOnly?`<span class="tag">${fd(r[0])}</span>`:''}</div>
+      <div class="tm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}${tipsAll?`<span class="tag">${esc(Mx.L.name)}</span>`:''}${grouped?'':`<span class="tag">${fd(r[0])}</span>`}</div>
       <div class="one">1 <b>${pc(p.w)}</b> · X <b>${pc(p.d)}</b> · 2 <b>${pc(p.l)}</b><br><span class="odds">odds ${od(p.w)} · ${od(p.d)} · ${od(p.l)}</span></div>
       <div class="sc"><span class="num">${top.map(t=>t[1]+'-'+t[2]).join(' / ')}</span> <span class="muted">(${top.map(t=>pc1(t[0])).join(' / ')})</span> <span class="odds">odds ${top.map(t=>od(t[0])).join(' / ')}</span></div>
       ${bk}${vl}</div>`;
@@ -462,10 +470,14 @@ function vTips(){
     :`<p class="note"><b>Irodai szorzók itt nem érhetők el.</b> A value-szűrő a GitHubos változatban működik, ha be van állítva az ODDS_API_KEY.</p>`;
   return `<section class="sec"><div class="teamhead"><h2>Tippek</h2>
       <button class="btn${tipsAll?' solid':''}" id="tipsAll" aria-pressed="${tipsAll}">Mind az 5 liga</button></div>
+    <div class="vctl" role="group" aria-label="Sorrend"><span class="small muted">Sorrend:</span>
+      ${[['time','Időrend'],['score','Pontos eredmény esélye'],['value','Value']].map(([k,l])=>`<button class="btn${sortMode===k?' solid':''}" data-sort="${k}" aria-pressed="${sortMode===k}"${k==='value'&&!hasOdds?' disabled title="Nincsenek irodai szorzók"':''}>${l}</button>`).join('')}
+      <label class="small muted" for="tipDays">Időszak:</label>
+      <select id="tipDays">${[[3,'3 nap'],[7,'1 hét'],[14,'2 hét'],[31,'1 hónap'],[0,'egész idény']].map(([v,l])=>`<option value="${v}"${v===tipDays?' selected':''}>${l}</option>`).join('')}</select></div>
     ${valueCtl}
-    <p class="small muted">${valueOnly?`Azok a meccsek, ahol a modell esélye × a legjobb irodai szorzó legalább ${valueMin}%-kal 1 felett van, a legnagyobb értékkel kezdve.`:'Minden hátralévő meccs a három legvalószínűbb pontos eredménnyel és azok esélyével, valamint az 1 / X / 2 esélyekkel. Koppints egy meccsre a részletekért.'}</p>
+    <p class="small muted">${{time:'Dátum szerint, naponként csoportosítva.',score:'Elöl azok a meccsek, ahol a legvalószínűbb pontos eredménynek a legnagyobb az esélye (legkisebb a szorzója).',value:'Elöl a legnagyobb value (1 / X / 2 vagy 2,5 gól felett/alatt). A szorzó nélküli meccsek a lista végén.'}[sortMode]}${valueOnly?` Csak azok a meccsek, ahol van legalább +${valueMin}% value.`:''} Koppints egy meccsre a részletekért.</p>
     <p class="note"><b>Odds</b> = 1 ÷ esély, vagyis a modell szerinti tiszta szorzó, irodai árrés nélkül. <b>Value sor</b>: tipp @ irodai szorzó-irodai esély (iroda) · modell szorzó-modell esély → szorzókülönbség (value). A <b>value</b> = modell-esély × irodai szorzó − 1, vagyis ennyit nyernél hosszú távon tétenként, ha a modell pontos. Nagy értéknél gyakran inkább a modell téved (sérülés, rotáció), ezért érdemes utánanézni.</p>
-    <div>${html||`<p class="muted">${valueOnly?'Nincs a feltételnek megfelelő tipp. Próbálj kisebb küszöböt.':'Nincs hátralévő meccs.'}</p>`}</div>
+    <div>${html||`<p class="muted">${valueOnly?'Nincs a feltételnek megfelelő tipp. Próbálj kisebb küszöböt vagy hosszabb időszakot.':'Ebben az időszakban nincs meccs. Válassz hosszabb időszakot.'}</p>`}</div>
     ${rows.length>tipsShow?`<button class="btn" id="tipsMore">További meccsek (${rows.length-tipsShow} van még)</button>`:''}
   </section>`;
 }
@@ -518,6 +530,7 @@ $('#view').addEventListener('click',e=>{
     state.home=h;state.away=a;state.view='match';store.set('view','match');render();const p=$('#predictor');if(p)p.scrollIntoView({block:'start'});else window.scrollTo({top:0});return}
   if(e.target.id==='tipsAll'){tipsAll=!tipsAll;store.set('tipsAll',tipsAll);tipsShow=40;render();return}
   if(e.target.id==='tipsMore'){tipsShow+=40;render();return}
+  const sb=e.target.closest('[data-sort]');if(sb){tipSort=sb.dataset.sort;store.set('tipSort',tipSort);tipsShow=40;render();return}
   if(e.target.id==='valueOnly'){valueOnly=!valueOnly;store.set('valueOnly',valueOnly);tipsShow=40;render();return}
   if(e.target.closest('select,label'))return;
   const tr=e.target.closest('tr[data-t]');if(tr){state.team=+tr.dataset.t;state.view='team';render();window.scrollTo({top:0});return}
@@ -531,6 +544,7 @@ $('#view').addEventListener('change',e=>{
   if(e.target.id==='teamSel'){state.team=+e.target.value;render()}
   if(e.target.id==='hSel'){state.home=+e.target.value;render()}
   if(e.target.id==='aSel'){state.away=+e.target.value;render()}
+  if(e.target.id==='tipDays'){tipDays=+e.target.value;store.set('tipDays',tipDays);tipsShow=40;render()}
   if(e.target.id==='valueMin'){valueMin=+e.target.value;store.set('valueMin',valueMin);render()}
 });
 
