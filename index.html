@@ -115,6 +115,16 @@ select{font:500 .95rem var(--f-body);color:var(--ink);background:var(--surface);
 .tip .one{font-size:.8rem;color:var(--muted);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .tip .one b{color:var(--ink);font-weight:600}
 .tip .sc{grid-column:1/-1;font-size:.88rem;font-variant-numeric:tabular-nums}
+.odds{color:var(--def);font-weight:600;font-variant-numeric:tabular-nums}
+.tip .odds{font-size:.8rem}
+.pp.odds{font-size:.72rem}
+.odd{font:700 1.1rem var(--f-disp);color:var(--def);font-variant-numeric:tabular-nums}
+.bk{grid-column:1/-1;font-size:.8rem;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.bko{font-variant-numeric:tabular-nums;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--soft)}
+.bko.val{background:color-mix(in srgb,var(--win) 22%,transparent);color:var(--ink)}
+.vl{grid-column:1/-1;font-size:.84rem;border-left:3px solid var(--win);padding:3px 0 3px 8px;display:grid;gap:2px}
+.vctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.vctl select{padding:5px 8px}
 .tip .sc .num{font-size:1.05rem;letter-spacing:.02em}
 @media (max-width:420px){.tip{grid-template-columns:1fr}.tip .one{text-align:left}}
 .tab{font-size:.98rem}
@@ -152,6 +162,9 @@ let src = {};                                // honnan jönnek az idei adatok: '
 let fdUpdated = null;                        // a football-data.org fájl frissítési ideje
 let sims = {}, models = {};
 let tipsAll = store.get('tipsAll',false), tipsShow = 40;
+let ODDS = null;                              // data/odds.json (The Odds API), ha elérhető
+let valueOnly = store.get('valueOnly',false), valueMin = store.get('valueMin',5);
+const oddsCache = {};
 
 /* ---------- matek ---------- */
 const FACT=[1];for(let i=1;i<20;i++)FACT[i]=FACT[i-1]*i;
@@ -180,6 +193,38 @@ function teamIndex(lg,name,shortName){
   if(i<0){i=L.teams.length;L.teams.push(shortName||name);L.raw.push(name)}
   L.alias[name]=i; return i;
 }
+
+/* ---------- irodai oddsok párosítása a meccsekhez ---------- */
+const ODDS_ALIAS={'inter milan':'inter','bayern munich':'bayern','athletic bilbao':'athletic club','paris saint germain':'psg','manchester united':'man united','manchester city':'man city','nottingham forest':"nott'm forest",'wolverhampton wanderers':'wolves','brighton and hove albion':'brighton','borussia monchengladbach':"m'gladbach",'tsg hoffenheim':'hoffenheim','atletico madrid':'atlético madrid'};
+function nameSim(name,lg,idx){
+  const L=DATA[lg];let n=String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const cands=[L.raw[idx],L.teams[idx]];
+  if(ODDS_ALIAS[n]){const a=ODDS_ALIAS[n].normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(cands.some(c=>c.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()===a))return 1}
+  const q=new Set(toks(name));let best=0;
+  for(const c of cands){const cs=new Set(toks(c));let i=0;cs.forEach(w=>{if(q.has(w))i++});const j=i/((q.size+cs.size-i)||1);if(j>best)best=j}
+  return best;
+}
+const dayDiff=(a,b)=>Math.abs(Date.parse(a)-Date.parse(b))/864e5;
+function oddsFor(lg,Mx){            // {"dátum|h|a": odds-rekord}
+  if(oddsCache[lg]&&oddsCache[lg].M===Mx) return oddsCache[lg].map;
+  const map={}, ev=(ODDS&&ODDS.leagues&&ODDS.leagues[lg])||[];
+  for(const e of ev){
+    let best=null,bs=0;
+    for(const r of Mx.remaining){ if(dayDiff(r[0],e.date)>1.01) continue;
+      const sh=nameSim(e.home,lg,r[1]), sa=nameSim(e.away,lg,r[2]);
+      if(sh<0.25||sa<0.25) continue; const sc=sh+sa; if(sc>bs){bs=sc;best=r} }
+    if(best&&bs>=0.8) map[best[0]+'|'+best[1]+'|'+best[2]]=e;
+  }
+  oddsCache[lg]={M:Mx,map}; return map;
+}
+function valueBets(p,o){            // modell-esély × legjobb szorzó − 1
+  if(!o||!o.best) return [];
+  const pOver=1-[0,1,2].reduce((s,k)=>{let t=0;for(let i=0;i<=k;i++)t+=p.grid[i][k-i];return s+t},0);
+  const opts=[['h','1 (hazai)',p.w],['d','X (döntetlen)',p.d],['a','2 (vendég)',p.l],['o','2,5 gól felett',pOver],['u','2,5 gól alatt',1-pOver]];
+  return opts.filter(([k])=>o.best[k]).map(([k,lab,pr])=>({k,lab,p:pr,odds:o.best[k][0],book:o.best[k][1],ev:pr*o.best[k][0]-1}));
+}
+const sgnPct=x=>(x>=0?'+':'−')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';
+const dec=x=>x.toFixed(2).replace('.',',');
 
 /* ---------- modell ---------- */
 function rowsFor(lg){
@@ -241,6 +286,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const r0=x=>Math.round(x);
 const pc=x=>Math.round(x*100)+'%';
+const pc1=x=>(x*100).toFixed(1).replace('.',',')+'%';
+// tiszta (fair) odds = 1 / valószínűség, irodai árrés nélkül
+const od=x=>x<=0.001?'–':(1/x>=100?Math.round(1/x).toString():(1/x).toFixed(2).replace('.',','));
 const sgn=(x,d=0)=>(x>0?'+':x<0?'−':'±')+Math.abs(x).toFixed(d);
 const HU=['jan.','febr.','márc.','ápr.','máj.','jún.','júl.','aug.','szept.','okt.','nov.','dec.'];
 const fd=s=>{const [y,m,d]=s.split('-');return HU[+m-1]+' '+(+d)+'.'};
@@ -349,7 +397,7 @@ function vMatch(){
   let gridH='<div class="h"></div>'+[0,1,2,3,4,5].map(j=>`<div class="h">${j}</div>`).join('');
   let best=[];
   for(let i=0;i<=5;i++){gridH+=`<div class="h">${i}</div>`;for(let j=0;j<=5;j++){const v=P.grid[i][j];best.push([v,i,j]);
-    const c=i>j?'win':i<j?'loss':'draw';gridH+=`<div style="background:color-mix(in srgb,var(--${c}) ${Math.min(85,v*100*5).toFixed(0)}%,transparent)">${(v*100).toFixed(v<.1?1:0)}</div>`}}
+    const c=i>j?'win':i<j?'loss':'draw';gridH+=`<div style="background:color-mix(in srgb,var(--${c}) ${Math.min(85,v*100*5).toFixed(0)}%,transparent)" title="${i}–${j}: odds ${od(v)}">${(v*100).toFixed(v<.1?1:0)}</div>`}}
   best.sort((a,b)=>b[0]-a[0]);
   // következő / hiányzó meccsek
   const overdue=M.remaining.filter(r=>r[0]<TODAY);
@@ -357,16 +405,17 @@ function vMatch(){
   const fxRow=(r,edit)=>{const p=predict(M,r[1],r[2]);
     return `<div class="fx${edit?'':' clickable'}"${edit?'':` data-pair="${r[1]}_${r[2]}" role="button" tabindex="0"`}><div style="min-width:0"><div class="tm">${esc(M.L.teams[r[1]])} – ${esc(M.L.teams[r[2]])}</div><div class="small muted">${fd(r[0])} · várt gól ${p.l1.toFixed(1)}–${p.l2.toFixed(1)}</div></div>
       ${edit?`<div class="entry"><input id="g1-${r.key}" inputmode="numeric" maxlength="2" aria-label="Hazai gól"><span>:</span><input id="g2-${r.key}" inputmode="numeric" maxlength="2" aria-label="Vendég gól"><button class="btn" data-save="${r.key}">Mentés</button></div>`
-       :`<div><div class="mini"><i style="width:${p.w*100}%;background:var(--win)"></i><i style="width:${p.d*100}%;background:var(--draw)"></i><i style="width:${p.l*100}%;background:var(--loss)"></i></div><div class="pp"><span>${pc(p.w)}</span><span>${pc(p.d)}</span><span>${pc(p.l)}</span></div></div>`}</div>`};
+       :`<div><div class="mini"><i style="width:${p.w*100}%;background:var(--win)"></i><i style="width:${p.d*100}%;background:var(--draw)"></i><i style="width:${p.l*100}%;background:var(--loss)"></i></div><div class="pp"><span>${pc(p.w)}</span><span>${pc(p.d)}</span><span>${pc(p.l)}</span></div><div class="pp odds"><span>${od(p.w)}</span><span>${od(p.d)}</span><span>${od(p.l)}</span></div></div>`}</div>`};
   overdue.forEach(r=>r.key=r[0]+'_'+r[1]+'_'+r[2]);
   const manCount=Object.keys(manual[M.lg]||{}).length;
   return `<section class="sec" id="predictor"><h2>Esélylatolgató</h2>
     <div class="pick">${sel('hSel',state.home)}<span class="vs">–</span>${sel('aSel',state.away)}</div>
-    <div class="prob">${probBar(P,true)}<div class="plab"><span>hazai győzelem</span><span>döntetlen</span><span>vendég győzelem</span></div></div>
+    <div class="prob">${probBar(P,true)}<div class="plab"><span>hazai győzelem<br><b class="odd">${od(P.w)}</b></span><span style="text-align:center">döntetlen<br><b class="odd">${od(P.d)}</b></span><span style="text-align:right">vendég győzelem<br><b class="odd">${od(P.l)}</b></span></div></div>
     <div class="xg"><div><div class="num att">${P.l1.toFixed(2)}</div><div class="small muted">várható gól</div></div>
-      <div style="text-align:center" class="small muted">Legvalószínűbb: <b class="num" style="font-size:1.1rem;color:var(--ink)">${best[0][1]}–${best[0][2]}</b>, ${best[1][1]}–${best[1][2]}, ${best[2][1]}–${best[2][2]}</div>
+      <div style="text-align:center" class="small muted">Legvalószínűbb:<br>${best.slice(0,3).map((b,k)=>`<b class="num" style="font-size:${k?'.95rem':'1.1rem'};color:var(--ink)">${b[1]}–${b[2]}</b> ${pc1(b[0])} · ${od(b[0])}`).join('<br>')}</div>
       <div style="text-align:right"><div class="num att">${P.l2.toFixed(2)}</div><div class="small muted">várható gól</div></div></div>
     <p class="small muted">${esc(H.name)} támadása ${r0(H.A)} a(z) ${esc(Aw.name)} ${r0(Aw.D)}-as védelme ellen, és fordítva ${r0(Aw.A)} a ${r0(H.D)} ellen. A hazai pálya előnye a liga átlagából jön (${M.muH.toFixed(2)} vs. ${M.muA.toFixed(2)} gól meccsenként).</p>
+    <p class="small muted">Az odds a modell szerinti tiszta szorzó (1 ÷ esély), irodai árrés nélkül.</p>
     <h3>Pontos eredmény esélye, %</h3>
     <div class="grid6" aria-label="Hazai gólok soronként, vendég gólok oszloponként">${gridH}</div>
     <p class="small muted">Sor: ${esc(H.name)} góljai · oszlop: ${esc(Aw.name)} góljai</p>
@@ -377,26 +426,46 @@ function vMatch(){
   <section class="sec"><h3>Következő meccsek</h3><p class="small muted">Koppints egy meccsre, és betöltődik fent az esélylatolgatóba.</p><div>${next.map(r=>fxRow(r,false)).join('')||'<p class="muted">Nincs hátralévő meccs.</p>'}</div></section>
   ${manCount?`<section class="sec"><p class="small muted">${manCount} kézzel beírt eredmény ebben a ligában. <button class="btn" id="clearMan">Kézi eredmények törlése</button></p></section>`:''}`;
 }
-const pc1=x=>(x*100).toFixed(1).replace('.',',')+'%';
 function vTips(){
   const lgs=tipsAll?LEAGUES:[state.league], rows=[];
-  for(const lg of lgs){const Mx=getM(lg);for(const r of Mx.remaining){if(r[0]<TODAY)continue;const p=predict(Mx,r[1],r[2]);
+  const hasOdds=!!(ODDS&&ODDS.leagues);
+  for(const lg of lgs){const Mx=getM(lg), om=hasOdds?oddsFor(lg,Mx):{};
+    for(const r of Mx.remaining){if(r[0]<TODAY)continue;const p=predict(Mx,r[1],r[2]);
     const sc=[];for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)sc.push([p.grid[i][j],i,j]);sc.sort((x,y)=>y[0]-x[0]);
-    rows.push({lg,Mx,r,p,top:sc.slice(0,3)})}}
-  rows.sort((x,y)=>x.r[0].localeCompare(y.r[0])||LEAGUES.indexOf(x.lg)-LEAGUES.indexOf(y.lg));
+    const o=om[r[0]+'|'+r[1]+'|'+r[2]]||null, vb=valueBets(p,o);
+    const vals=vb.filter(v=>v.ev*100>=valueMin);
+    if(valueOnly&&!vals.length) continue;
+    rows.push({lg,Mx,r,p,top:sc.slice(0,3),o,vb,vals})}}
+  if(valueOnly) rows.sort((x,y)=>Math.max(...y.vals.map(v=>v.ev))-Math.max(...x.vals.map(v=>v.ev)));
+  else rows.sort((x,y)=>x.r[0].localeCompare(y.r[0])||LEAGUES.indexOf(x.lg)-LEAGUES.indexOf(y.lg));
   const shown=rows.slice(0,tipsShow);let html='',lastD='';
+  const dn=d=>['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'][new Date(d+'T12:00:00').getDay()];
   for(const x of shown){
-    if(x.r[0]!==lastD){lastD=x.r[0];html+=`<div class="tday">${fd(lastD)} <span class="muted">${['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'][new Date(lastD+'T12:00:00').getDay()]}</span></div>`}
-    const {p,top,Mx,r}=x;
+    if(!valueOnly&&x.r[0]!==lastD){lastD=x.r[0];html+=`<div class="tday">${fd(lastD)} <span class="muted">${dn(lastD)}</span></div>`}
+    const {p,top,Mx,r,o,vb}=x;
+    const bk=o&&o.best?`<div class="bk"><span class="muted">Legjobb irodai szorzó:</span> ${['h','d','a'].map((k,n)=>{const b=o.best[k];if(!b)return '';const v=vb.find(z=>z.k===k);
+        return `<span class="bko${v&&v.ev*100>=valueMin?' val':''}" title="${esc(b[1])}">${['1','X','2'][n]} ${dec(b[0])}</span>`}).join(' ')}
+        ${o.best.o?`<span class="bko${vb.find(z=>z.k==='o'&&z.ev*100>=valueMin)?' val':''}" title="${esc(o.best.o[1])}">+2,5 ${dec(o.best.o[0])}</span>`:''}
+        ${o.best.u?`<span class="bko${vb.find(z=>z.k==='u'&&z.ev*100>=valueMin)?' val':''}" title="${esc(o.best.u[1])}">−2,5 ${dec(o.best.u[0])}</span>`:''}</div>`:'';
+    const vl=x.vals.length?`<div class="vl">${x.vals.sort((a,b)=>b.ev-a.ev).map(v=>`<div><b>${v.lab}</b> @ ${dec(v.odds)} <span class="muted">(${esc(v.book)})</span> · modell ${pc1(v.p)} → <b class="up">${sgnPct(v.ev)}</b></div>`).join('')}</div>`:'';
     html+=`<div class="tip clickable" data-pair="${r[1]}_${r[2]}" data-lg="${x.lg}" role="button" tabindex="0">
-      <div class="tm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}${tipsAll?`<span class="tag">${esc(Mx.L.name)}</span>`:''}</div>
-      <div class="one">1 <b>${pc(p.w)}</b> · X <b>${pc(p.d)}</b> · 2 <b>${pc(p.l)}</b></div>
-      <div class="sc"><span class="num">${top.map(t=>t[1]+'-'+t[2]).join(', ')}</span> <span class="muted">(${top.map(t=>pc1(t[0])).join(', ')})</span></div></div>`;
+      <div class="tm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}${tipsAll?`<span class="tag">${esc(Mx.L.name)}</span>`:''}${valueOnly?`<span class="tag">${fd(r[0])}</span>`:''}</div>
+      <div class="one">1 <b>${pc(p.w)}</b> · X <b>${pc(p.d)}</b> · 2 <b>${pc(p.l)}</b><br><span class="odds">odds ${od(p.w)} · ${od(p.d)} · ${od(p.l)}</span></div>
+      <div class="sc"><span class="num">${top.map(t=>t[1]+'-'+t[2]).join(' / ')}</span> <span class="muted">(${top.map(t=>pc1(t[0])).join(' / ')})</span> <span class="odds">odds ${top.map(t=>od(t[0])).join(' / ')}</span></div>
+      ${bk}${vl}</div>`;
   }
+  const upd=hasOdds&&ODDS.updated?new Date(ODDS.updated):null;
+  const valueCtl=hasOdds?`<div class="vctl"><button class="btn${valueOnly?' solid':''}" id="valueOnly" aria-pressed="${valueOnly}">Csak value tippek</button>
+      <label class="small muted" for="valueMin">legalább</label>
+      <select id="valueMin">${[0,3,5,10,15,20].map(v=>`<option value="${v}"${v===valueMin?' selected':''}>+${v}%</option>`).join('')}</select>
+      <span class="small muted">Oddsok: ${upd?fd(upd.toISOString().slice(0,10))+' '+upd.toTimeString().slice(0,5):'–'}</span></div>`
+    :`<p class="note"><b>Irodai szorzók itt nem érhetők el.</b> A value-szűrő a GitHubos változatban működik, ha be van állítva az ODDS_API_KEY.</p>`;
   return `<section class="sec"><div class="teamhead"><h2>Tippek</h2>
       <button class="btn${tipsAll?' solid':''}" id="tipsAll" aria-pressed="${tipsAll}">Mind az 5 liga</button></div>
-    <p class="small muted">Minden hátralévő meccs a három legvalószínűbb pontos eredménnyel és azok esélyével, valamint az 1 / X / 2 esélyekkel. Koppints egy meccsre a részletekért.</p>
-    <div>${html||'<p class="muted">Nincs hátralévő meccs.</p>'}</div>
+    ${valueCtl}
+    <p class="small muted">${valueOnly?`Azok a meccsek, ahol a modell esélye × a legjobb irodai szorzó legalább ${valueMin}%-kal 1 felett van, a legnagyobb értékkel kezdve.`:'Minden hátralévő meccs a három legvalószínűbb pontos eredménnyel és azok esélyével, valamint az 1 / X / 2 esélyekkel. Koppints egy meccsre a részletekért.'}</p>
+    <p class="note"><b>Odds</b> = 1 ÷ esély, vagyis a modell szerinti tiszta szorzó, irodai árrés nélkül. <b>Value</b> = modell-esély × irodai szorzó − 1: ennyit nyernél hosszú távon tétenként, ha a modell pontos. Nagy értéknél gyakran inkább a modell téved (sérülés, rotáció), ezért érdemes utánanézni.</p>
+    <div>${html||`<p class="muted">${valueOnly?'Nincs a feltételnek megfelelő tipp. Próbálj kisebb küszöböt.':'Nincs hátralévő meccs.'}</p>`}</div>
     ${rows.length>tipsShow?`<button class="btn" id="tipsMore">További meccsek (${rows.length-tipsShow} van még)</button>`:''}
   </section>`;
 }
@@ -449,6 +518,8 @@ $('#view').addEventListener('click',e=>{
     state.home=h;state.away=a;state.view='match';store.set('view','match');render();const p=$('#predictor');if(p)p.scrollIntoView({block:'start'});else window.scrollTo({top:0});return}
   if(e.target.id==='tipsAll'){tipsAll=!tipsAll;store.set('tipsAll',tipsAll);tipsShow=40;render();return}
   if(e.target.id==='tipsMore'){tipsShow+=40;render();return}
+  if(e.target.id==='valueOnly'){valueOnly=!valueOnly;store.set('valueOnly',valueOnly);tipsShow=40;render();return}
+  if(e.target.closest('select,label'))return;
   const tr=e.target.closest('tr[data-t]');if(tr){state.team=+tr.dataset.t;state.view='team';render();window.scrollTo({top:0});return}
   const sv=e.target.closest('[data-save]');if(sv){const k=sv.dataset.save,g1=parseInt($('#g1-'+k).value),g2=parseInt($('#g2-'+k).value);
     if(isNaN(g1)||isNaN(g2)||g1<0||g2<0){sv.textContent='Adj meg 2 számot';return}
@@ -460,6 +531,7 @@ $('#view').addEventListener('change',e=>{
   if(e.target.id==='teamSel'){state.team=+e.target.value;render()}
   if(e.target.id==='hSel'){state.home=+e.target.value;render()}
   if(e.target.id==='aSel'){state.away=+e.target.value;render()}
+  if(e.target.id==='valueMin'){valueMin=+e.target.value;store.set('valueMin',valueMin);render()}
 });
 
 /* Adatforrások az idei idényre, ebben a sorrendben:
@@ -478,7 +550,8 @@ function ingest(lg,matches,shortOf){   // matches: [dátum, hazai név, vendég 
 }
 const playedN=rows=>rows.filter(x=>x.length>=5).length;
 async function loadSources(){
-  const fdj=await getJSON('data/friss.json');
+  const [fdj,oj]=await Promise.all([getJSON('data/friss.json'),getJSON('data/odds.json')]);
+  if(oj&&oj.leagues) ODDS=oj;
   if(fdj&&fdj.leagues){
     fdUpdated=fdj.updated||null;
     for(const lg of LEAGUES){const x=fdj.leagues[lg];if(!x||!x.matches||!x.matches.length||(x.season&&x.season!==SEASON))continue;
