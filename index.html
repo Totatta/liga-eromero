@@ -336,7 +336,7 @@ function fGrid(td,opt){              // F elrendezés: modell / iroda / value+ke
   return `<div class="fg"><div class="flab"><div style="height:44px"><span>${blendW?'igazított':'modell'}</span></div><div style="height:45px"><span>iroda</span></div><div style="height:35px"><span>value</span></div></div>${td.cells.map(cell).join('')}</div>`;
 }
 function scoreBoxes(td){
-  return `<div class="fsg">${td.scores.map(s=>`<div class="fsb"><span class="fr">${s[1]}-${s[2]}</span><span class="fx2"><b>${od(s[0])}</b> · ${pc1(s[0])}</span></div>`).join('')}</div>`;
+  return `<div class="fsg">${td.scores.map(s=>`<div class="fsb"><span class="fr">${s[1]}-${s[2]}</span><span class="fx2"><b>${pc1(s[0])}</b> · ${od(s[0])}</span></div>`).join('')}</div>`;
 }
 const sgnPct0=x=>(x>=0?'+':'−')+Math.abs(Math.round(x*100))+'%';
 const sgnPct=x=>(x>=0?'+':'−')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';
