@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '17 5,22 * * *'   # naponta 7:17 és 0:17 körül (magyar idő szerint, nyáron)
   workflow_dispatch:           # kézi indítás az Actions fülről
+    inputs:
+      oddsok:
+        description: 'Oddsok újratöltése akkor is, ha ma már frissültek (kb. 10 kredit)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -25,6 +30,7 @@ jobs:
         run: node scripts/odds.mjs
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          FORCE: ${{ github.event.inputs.oddsok }}
       - name: Mentés a repóba
         run: |
           git config user.name "github-actions[bot]"
