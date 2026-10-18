@@ -194,7 +194,12 @@ details.note p{margin-top:6px}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
 .seg.idle{opacity:.5}
 .seg button:disabled{cursor:not-allowed}
-.sim .simctl{display:grid;grid-template-columns:auto minmax(0,1fr) 3em;gap:10px;align-items:center}
+.sim .simctl{display:grid;grid-template-columns:minmax(0,1fr) 3em;gap:10px;align-items:center;min-height:32px}
+.spanel{border:1px solid var(--line);border-radius:10px;padding:0 10px}
+.spanel .trow{padding:7px 0}
+.spanel .tlab{padding-top:7px}
+.stxt{font-size:.92rem;line-height:1.35}.stxt b{font:700 1.1rem var(--f-disp)}
+.sexp{justify-self:stretch;width:100%}
 .sim input[type=range]{width:100%;accent-color:var(--accent)}
 .simv{font-size:1.05rem;text-align:right}
 .sblk{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:10px}
@@ -249,7 +254,7 @@ let src = {};                                // honnan jönnek az idei adatok: '
 let fdUpdated = null;                        // a football-data.org fájl frissítési ideje
 let sims = {}, models = {};
 let tipsAll = store.get('tipsAll',false), tipsShow = 40;
-let simTol = store.get('simTol',40), simPrev = store.get('simPrev',false), simMode = store.get('simMode','S'), simOpen = {};
+let simTol = store.get('simTol',40), simPrev = store.get('simPrev',false), simMode = store.get('simMode','S'), simVenue = store.get('simVenue',false), simOpen = {}, simLevel = 0;
 let teamSer = store.get('teamSer',{S:true,A:true,D:true}), matchSer = store.get('matchSer',{str:true,att:true,def:false});
 let ODDS = null;                              // data/odds.json (The Odds API), ha elérhető
 let valueOnly = store.get('valueOnly',false), valueMin = store.get('valueMin',5), tipSort = store.get('tipSort','time'), tipDays = store.get('tipDays',7);
@@ -536,45 +541,48 @@ function similarHtml(H,Aw){
   const G=M.games.filter(g=>simPrev||!g.prev), T=simTol;
   const sim=(oA,oD,t)=>simMode==='S'?Math.abs((oA+oD)/2-t.S)<=T:(Math.abs(oA-t.A)<=T&&Math.abs(oD-t.D)<=T);
   // csapat nézőpontjából: a csapat meccsei a cél-csapathoz hasonló ellenfelek ellen
-  const teamList=(team,target)=>G.filter(g=>(g.h===team.t&&g.a!==target.t&&sim(g.aA,g.aD,target))||(g.a===team.t&&g.h!==target.t&&sim(g.hA,g.hD,target)))
+  const teamList=(team,target,side)=>G.filter(g=>((g.h===team.t&&g.a!==target.t&&sim(g.aA,g.aD,target))&&(!simVenue||side==='h'))||((g.a===team.t&&g.h!==target.t&&sim(g.hA,g.hD,target))&&(!simVenue||side==='a')))
     .map(g=>{const home=g.h===team.t;return {g,home,opp:home?g.a:g.h,gf:home?g.g1:g.g2,ga:home?g.g2:g.g1,oS:home?(g.aA+g.aD)/2:(g.hA+g.hD)/2,xp:home?g.xh:g.xa}})
     .sort((x,y)=>y.g.dt.localeCompare(x.g.dt));
   const leagueList=G.filter(g=>sim(g.hA,g.hD,H)&&sim(g.aA,g.aD,Aw)).sort((x,y)=>y.dt.localeCompare(x.dt));
-  const L1=teamList(H,Aw), L2=teamList(Aw,H);
+  const L1=teamList(H,Aw,'h'), L2=teamList(Aw,H,'a');
   const nm=t=>esc(M.L.teams[t]);
   const sumTeam=l=>{let w=0,d=0,lo=0,gf=0,ga=0,p=0,xp=0;for(const x of l){x.gf>x.ga?w++:x.gf===x.ga?d++:lo++;gf+=x.gf;ga+=x.ga;p+=x.gf>x.ga?3:x.gf===x.ga?1:0;xp+=x.xp}
-    const n=l.length||1;return l.length?`<div class="ssum"><span class="num">${w}–${d}–${lo}</span>
+    const n=l.length||1, nh=l.filter(x=>x.home).length, na=l.length-nh;
+    return l.length?`<div class="ssum"><span class="stxt"><b>${w}</b> győzelem · <b>${d}</b> döntetlen · <b>${lo}</b> vereség <span class="muted">(${nh&&na?nh+' otthon, '+na+' idegenben':nh?'mind otthon':'mind idegenben'})</span></span>
       <div class="wdl"><i style="width:${w/n*100}%;background:var(--win)"></i><i style="width:${d/n*100}%;background:var(--draw)"></i><i style="width:${lo/n*100}%;background:var(--loss)"></i></div>
       <span class="small muted">gól/meccs ${(gf/n).toFixed(1).replace('.',',')}–${(ga/n).toFixed(1).replace('.',',')} · <span class="${dCls(p-xp,0.5)}">${sgn(p-xp,1)} pont a vártnál</span></span></div>`:'<p class="small muted">Nincs ilyen meccs ezzel a tűréssel.</p>'};
   const rowTeam=x=>{const res=x.gf>x.ga?'W':x.gf===x.ga?'D':'L';
     return `<div class="srow"><span class="sd">${fd(x.g.dt)}${x.g.prev?'<br><span class="tag">tavaly</span>':''}</span><span class="so">${x.home?'':'@ '}${nm(x.opp)} <span class="small muted">(${r0(x.oS)})</span></span><span class="res ${res}">${x.gf}–${x.ga}</span></div>`};
   const sumLeague=l=>{if(!l.length)return '<p class="small muted">Nincs ilyen meccs ezzel a tűréssel.</p>';
     let h=0,d=0,a=0,g1=0,g2=0,ov=0;for(const g of l){g.g1>g.g2?h++:g.g1===g.g2?d++:a++;g1+=g.g1;g2+=g.g2;if(g.g1+g.g2>2)ov++}const n=l.length;
-    return `<div class="ssum"><span class="num">1 ${pc(h/n)} · X ${pc(d/n)} · 2 ${pc(a/n)}</span>
+    return `<div class="ssum"><span class="stxt"><b>${pc(h/n)}</b> hazai győzelem · <b>${pc(d/n)}</b> döntetlen · <b>${pc(a/n)}</b> vendéggyőzelem</span>
       <div class="wdl"><i style="width:${h/n*100}%;background:var(--win)"></i><i style="width:${d/n*100}%;background:var(--draw)"></i><i style="width:${a/n*100}%;background:var(--loss)"></i></div>
       <span class="small muted">gól/meccs ${(g1/n).toFixed(1).replace('.',',')}–${(g2/n).toFixed(1).replace('.',',')} · 2,5 felett ${pc(ov/n)}</span></div>`};
   const rowLeague=g=>{const res=g.g1>g.g2?'W':g.g1===g.g2?'D':'L';
     return `<div class="srow"><span class="sd">${fd(g.dt)}${g.prev?'<br><span class="tag">tavaly</span>':''}</span><span class="so">${nm(g.h)} – ${nm(g.a)} <span class="small muted">(${r0((g.hA+g.hD)/2)}–${r0((g.aA+g.aD)/2)})</span></span><span class="res ${res}">${g.g1}–${g.g2}</span></div>`};
-  const block=(key,title,sub,list,sum,row)=>{const open=simOpen[key], shown=open?list:list.slice(0,6);
+  const block=(key,title,sub,list,sum,row)=>{const open=simOpen[key], shown=simLevel?(open?list:list.slice(0,6)):[];
     return `<div class="sblk"><div class="sh2">${title} <span class="small muted">(${list.length})</span></div><div class="small muted">${sub}</div>${sum(list)}
-      <div class="slist">${shown.map(row).join('')}</div>
-      ${list.length>6?`<button class="btn" data-simopen="${key}">${open?'Kevesebb':'Mind a '+list.length+' meccs'}</button>`:''}</div>`};
+      ${shown.length?`<div class="slist">${shown.map(row).join('')}</div>`:''}
+      ${simLevel&&list.length>6?`<button class="btn" data-simopen="${key}">${open?'Kevesebb':'Mind a '+list.length+' meccs'}</button>`:''}</div>`};
   const tgt=t=>simMode==='S'?`erő ${r0(t.S)}`:`támadás ${r0(t.A)}, védekezés ${r0(t.D)}`;
+  const sw=(id,on,label)=>`<button class="sw" id="${id}" role="switch" aria-checked="${on}" aria-label="${label}"><span class="knob"></span></button>`;
   return `<article class="fcard sim">
-    <div class="fhd"><span class="ftm">Hasonló meccsek</span><span class="fmeta">±${T} pont</span></div>
-    <div class="simctl">
-      <label class="small muted" for="simTol">Tűrés</label>
-      <input type="range" id="simTol" min="10" max="100" step="5" value="${T}" aria-label="Tűrés erőpontban">
-      <span class="num simv">±${T}</span>
+    <div class="fhd"><span class="ftm">Hasonló meccsek</span></div>
+    <div class="spanel">
+      <div class="trow"><span class="tlab">Tűrés</span><div class="tbody"><div class="simctl">
+        <input type="range" id="simTol" min="10" max="100" step="5" value="${T}" aria-label="Tűrés erőpontban"><span class="num simv">±${T}</span></div></div></div>
+      <div class="trow"><span class="tlab">Alapja</span><div class="tbody"><div class="tline">
+        <span class="seg" role="group" aria-label="Hasonlóság alapja"><button data-simmode="S" aria-pressed="${simMode==='S'}">Összerő</button><button data-simmode="AD" aria-pressed="${simMode==='AD'}">Tám. + véd.</button></span></div></div></div>
+      <div class="trow"><span class="tlab">Meccsek</span><div class="tbody">
+        <div class="tline"><span class="swl">${sw('simPrev',simPrev,'Tavalyi idény is')}<span class="tsub">tavaly is</span></span>
+        <span class="swl">${sw('simVenue',simVenue,'Helyszín szerint')}<span class="tsub">helyszín szerint</span></span></div></div></div>
     </div>
-    <div class="tline">
-      <span class="seg" role="group" aria-label="Hasonlóság alapja"><button data-simmode="S" aria-pressed="${simMode==='S'}">Összerő</button><button data-simmode="AD" aria-pressed="${simMode==='AD'}">Támadás + védekezés</button></span>
-      <span class="swl"><button class="sw" id="simPrev" role="switch" aria-checked="${simPrev}" aria-label="Tavalyi idény is"><span class="knob"></span></button><span class="tsub">tavalyi idény is</span></span>
-    </div>
-    <p class="small muted">Mindig az ellenfél akkori (meccs előtti) ereje számít.${simMode==='AD'?' Támadás + védekezés módban mindkettőnek a tűrésen belül kell lennie.':''}</p>
+    <p class="small muted">Az ellenfél meccs előtti ereje számít.</p>
     ${block('h',`${nm(H.t)} hasonló ellenfelek ellen`,`ellenfél ≈ ${nm(Aw.t)} (${tgt(Aw)})`,L1,sumTeam,rowTeam)}
     ${block('a',`${nm(Aw.t)} hasonló ellenfelek ellen`,`ellenfél ≈ ${nm(H.t)} (${tgt(H)})`,L2,sumTeam,rowTeam)}
     ${block('l','Hasonló párosítások a ligában',`hazai ≈ ${nm(H.t)}, vendég ≈ ${nm(Aw.t)}`,leagueList,sumLeague,rowLeague)}
+    <button class="btn sexp" data-simlevel="1">${simLevel?'Meccsek elrejtése':'Bővebben: meccsek megjelenítése'}</button>
   </article>`;
 }
 function vMatch(){
@@ -607,7 +615,6 @@ function vMatch(){
       const o=fx&&ODDS&&ODDS.leagues?oddsFor(M.lg,M)[fx[0]+'|'+fx[1]+'|'+fx[2]]||null:null, td=tipData(P,o);
       return `<article class="fcard"><div class="fhd"><span class="ftm">Tippek</span><span class="fmeta">${fx?(o?'irodai átlag · '+fd(fx[0]):'nincs irodai szorzó · '+fd(fx[0])):'nincs kiírt meccs, csak modell'}</span></div>
         ${fGrid(td)}<div class="fsh">Végeredmény</div>${scoreBoxes(td)}</article>`})()}
-    ${similarHtml(H,Aw)}
     <p class="small muted">${esc(H.name)} támadása ${r0(H.A)} a(z) ${esc(Aw.name)} ${r0(Aw.D)}-as védelme ellen, és fordítva ${r0(Aw.A)} a ${r0(H.D)} ellen. A hazai pálya előnye a liga átlagából jön (${M.muH.toFixed(2)} vs. ${M.muA.toFixed(2)} gól meccsenként).</p>
     <p class="small muted">Az odds a modell szerinti tiszta szorzó (1 ÷ esély), irodai árrés nélkül.</p>
     <h3>A két csapat ereje meccsről meccsre</h3>
@@ -623,6 +630,7 @@ function vMatch(){
     <h3>Pontos eredmény esélye, %</h3>
     <div class="grid6" aria-label="Hazai gólok soronként, vendég gólok oszloponként">${gridH}</div>
     <p class="small muted">Sor: ${esc(H.name)} góljai · oszlop: ${esc(Aw.name)} góljai</p>
+    ${similarHtml(H,Aw)}
   </section>
   ${overdue.length?`<section class="sec"><h3>Hiányzó eredmények (${overdue.length})</h3>
     <p class="small muted">Ezek a meccsek már lementek, de az adatforrásban még nincs eredményük. Írd be, és minden újraszámolódik.</p>
@@ -752,6 +760,8 @@ $('#view').addEventListener('click',e=>{
     state.home=h;state.away=a;state.view='match';store.set('view','match');render();const p=$('#predictor');if(p)p.scrollIntoView({block:'start'});else window.scrollTo({top:0});return}
   if(e.target.id==='tipsAll'){tipsAll=!tipsAll;store.set('tipsAll',tipsAll);tipsShow=40;render();return}
   if(e.target.id==='tipsMore'){tipsShow+=40;render();return}
+  if(e.target.closest('#simVenue')){simVenue=!simVenue;store.set('simVenue',simVenue);render();return}
+  if(e.target.closest('[data-simlevel]')){simLevel=simLevel?0:1;if(!simLevel)simOpen={};render();return}
   if(e.target.closest('#simPrev')){simPrev=!simPrev;store.set('simPrev',simPrev);render();return}
   const smd=e.target.closest('[data-simmode]');if(smd){simMode=smd.dataset.simmode;store.set('simMode',simMode);render();return}
   const so=e.target.closest('[data-simopen]');if(so){simOpen[so.dataset.simopen]=!simOpen[so.dataset.simopen];render();return}
