@@ -1,5 +1,7 @@
 // Letölti a következő meccsek irodai szorzóit (1X2 és 2,5 gól felett/alatt) a The Odds API-ról,
-// és elmenti a data/odds.json fájlba. Naponta legfeljebb egyszer kér le (kb. 10 kredit / nap).
+// és elmenti a data/odds.json fájlba: kimenetenként az irodák ÁTLAGOS szorzóját, a fogadási
+// tőzsdék (Betfair, Matchbook, Smarkets stb.) nélkül.
+// Naponta legfeljebb egyszer kér le (kb. 10 kredit). Kényszerítés: FORCE=1.
 // Kézzel: ODDS_API_KEY=... node scripts/odds.mjs
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
@@ -13,15 +15,19 @@ const LIGAK = {
   'fr.1': 'soccer_france_ligue_one',
   'it.1': 'soccer_italy_serie_a',
 };
+const TOZSDE = /betfair_ex|matchbook|smarkets|betdaq/i; // fogadási tőzsdék kulcsai
 const FAJL = 'data/odds.json';
-const MIN_ORA = 20; // ennyi órán belül nem kér le újra (kreditkímélés)
+const most = new Date();
 
 let regi = null;
 try { regi = JSON.parse(await readFile(FAJL, 'utf8')); } catch {}
-if (regi?.updated && !process.env.FORCE && (Date.now() - Date.parse(regi.updated)) / 36e5 < MIN_ORA) {
-  console.log(`Az oddsok ${MIN_ORA} órán belül frissültek, most kimarad.`); process.exit(0);
+const force = process.env.FORCE === '1' || process.env.FORCE === 'true';
+if (!force && regi?.updated && regi.updated.slice(0, 10) === most.toISOString().slice(0, 10)) {
+  console.log('Az oddsok ma már frissültek, most kimarad. (Kényszerítés: a kézi indításnál pipáld be az „Oddsok újratöltése” opciót.)');
+  process.exit(0);
 }
 
+const r2 = x => Math.round(x * 100) / 100;
 const leagues = {};
 let maradek = null, hiba = 0;
 for (const [lg, sport] of Object.entries(LIGAK)) {
@@ -32,26 +38,25 @@ for (const [lg, sport] of Object.entries(LIGAK)) {
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const esemenyek = await r.json();
     leagues[lg] = esemenyek.map(e => {
-      const best = {}, sum = { h: 0, d: 0, a: 0 }; let n = 0;
-      const jobb = (k, ar, iroda) => { if (ar > 1 && (!best[k] || ar > best[k][0])) best[k] = [ar, iroda]; };
+      const gy = { h: [], d: [], a: [], o: [], u: [] };
       for (const b of e.bookmakers || []) {
+        if (TOZSDE.test(b.key || '') || TOZSDE.test(b.title || '')) continue;
         for (const m of b.markets || []) {
           if (m.key === 'h2h') {
-            const o = Object.fromEntries(m.outcomes.map(x => [x.name, x.price]));
-            const h = o[e.home_team], a = o[e.away_team], d = o.Draw;
-            jobb('h', h, b.title); jobb('d', d, b.title); jobb('a', a, b.title);
-            if (h && d && a) { sum.h += 1 / h; sum.d += 1 / d; sum.a += 1 / a; n++; }
+            for (const x of m.outcomes) {
+              const k = x.name === e.home_team ? 'h' : x.name === e.away_team ? 'a' : x.name === 'Draw' ? 'd' : null;
+              if (k && x.price > 1) gy[k].push(x.price);
+            }
           } else if (m.key === 'totals') {
-            for (const x of m.outcomes) if (x.point === 2.5) jobb(x.name === 'Over' ? 'o' : 'u', x.price, b.title);
+            for (const x of m.outcomes) if (x.point === 2.5 && x.price > 1) gy[x.name === 'Over' ? 'o' : 'u'].push(x.price);
           }
         }
       }
-      // piaci (árrés nélküli) valószínűség az irodák átlagából
-      let piac = null;
-      if (n) { const t = sum.h + sum.d + sum.a; piac = { h: +(sum.h / t).toFixed(4), d: +(sum.d / t).toFixed(4), a: +(sum.a / t).toFixed(4) }; }
-      return { date: e.commence_time.slice(0, 10), home: e.home_team, away: e.away_team, books: (e.bookmakers || []).length, best, piac };
-    });
-    console.log(`${lg}: ${leagues[lg].length} meccs szorzói`);
+      const avg = {}, n = {};
+      for (const k in gy) if (gy[k].length) { avg[k] = r2(gy[k].reduce((s, v) => s + v, 0) / gy[k].length); n[k] = gy[k].length; }
+      return { date: e.commence_time.slice(0, 10), home: e.home_team, away: e.away_team, avg, n };
+    }).filter(x => Object.keys(x.avg).length);
+    console.log(`${lg}: ${leagues[lg].length} meccs átlagszorzói`);
   } catch (e) {
     hiba++;
     console.error(`${lg} oddsainak letöltése nem sikerült: ${e.message}`);
@@ -61,5 +66,5 @@ for (const [lg, sport] of Object.entries(LIGAK)) {
 if (maradek !== null) console.log(`Hátralévő kredit ebben a hónapban: ${maradek}`);
 if (hiba === Object.keys(LIGAK).length) { console.error('Egyik liga oddsai sem töltődtek le.'); process.exit(1); }
 await mkdir('data', { recursive: true });
-await writeFile(FAJL, JSON.stringify({ source: 'the-odds-api.com', updated: new Date().toISOString(), remaining: maradek, leagues }));
+await writeFile(FAJL, JSON.stringify({ source: 'the-odds-api.com', kind: 'avg-no-exchanges', updated: most.toISOString(), remaining: maradek, leagues }));
 console.log('Mentve:', FAJL);

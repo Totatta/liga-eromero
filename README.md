@@ -6,6 +6,7 @@ Támadó- és védekezőerő alapú erősorrend, esélylatolgató és idényszim
 - **Idei idény:** football-data.org, naponta kétszer frissítve egy GitHub-automatizmussal (`data/friss.json`).
 - **Tartalék forrás:** ha az idei adat nem érhető el, az oldal az openfootball adatait használja, végső esetben a fájlba épített adatokat.
 - **Előző idény:** az openfootball adatai, beépítve az `index.html`-be.
+- **Irodai szorzók:** a The Odds API-ról, naponta egyszer (`data/odds.json`): kimenetenként az irodák átlagos szorzója, a fogadási tőzsdék (Betfair, Matchbook) nélkül. Ezekből számolja a Tippek fül a value-t és a Kelly-arányt.
 
 ## Beállítás lépésről lépésre
 
@@ -30,6 +31,16 @@ Támadó- és védekezőerő alapú erősorrend, esélylatolgató és idényszim
 1. **Actions** fül → bal oldalt **Eredmények frissítése** → **Run workflow**.
 2. Körülbelül egy perc múlva megjelenik a repóban a `data/friss.json` fájl.
 3. Ha piros X-et látsz, kattints rá: a naplóban magyarul ott a hiba oka, például rossz kulcs esetén `HTTP 403`.
+
+### 4/b. Oddsok (value tippekhez), nem kötelező
+1. Regisztrálj a https://the-odds-api.com oldalon az ingyenes csomagra (havi 500 kredit). Az API-kulcsot e-mailben kapod meg.
+2. **Settings → Secrets and variables → Actions → New repository secret**
+   - **Name:** `ODDS_API_KEY`
+   - **Secret:** az e-mailben kapott kulcs
+3. Indíts egy kézi futtatást (**Actions → Eredmények frissítése → Run workflow**). Utána megjelenik a `data/odds.json` fájl.
+   - Egy letöltés kb. 10 kreditbe kerül. A szkript naponta (UTC szerint) legfeljebb egyszer kér le, így havonta kb. 300 kredit fogy.
+   - Ha aznap már volt letöltés, de mégis frissíteni akarod: a **Run workflow** ablakban pipáld be az „Oddsok újratöltése” opciót.
+   - A naplóban látszik a hónapból hátralévő kredit.
 
 ### 5. Weboldal bekapcsolása
 1. **Settings → Pages → Build and deployment**
