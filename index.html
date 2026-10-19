@@ -167,7 +167,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fval{font-weight:700;font-size:12px;line-height:1.1}
 .fkl{font-size:10px;color:var(--muted);line-height:1.1}
 .fval.pos{color:var(--win)}.fval.neg{color:var(--muted);opacity:.75}
-.fsh{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.fsh{display:flex;justify-content:space-between;align-items:center;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .fsg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
 .fsb{background:var(--bg);border-radius:8px;padding:6px 4px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;font-variant-numeric:tabular-nums}
 .fr{font:700 22px/1 var(--f-disp);color:var(--ink)}
@@ -213,6 +213,89 @@ details.note p{margin-top:6px}
 .sd{font-size:.74rem;color:var(--muted);line-height:1.25}
 .so{font-size:.9rem;font-weight:600;min-width:0}
 .srow .res{font-size:.95rem;min-width:2.8em}
+.tl-short{display:none}
+.tbadge{display:inline-block;min-width:1.25em;margin-left:4px;padding:0 4px;border-radius:999px;background:var(--accent);color:var(--bg);font-size:.72rem;line-height:1.35;vertical-align:2px}
+.tbadge:empty{display:none}
+.fc.pickable{cursor:pointer;position:relative;transition:transform .12s ease}
+.fc.pickable:hover{box-shadow:inset 0 0 0 1px var(--muted)}
+.fc.pickable:active{transform:scale(.97)}
+.fc.pickable:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fc.sel{background:var(--ink);box-shadow:0 3px 10px color-mix(in srgb,var(--ink) 30%,transparent);transform:translateY(-2px)}
+.fc.sel .fk,.fc.sel .fb,.fc.sel .fi .fb{color:var(--bg)}
+.fc.sel .fp,.fc.sel .fkl{color:color-mix(in srgb,var(--bg) 72%,var(--ink))}
+.fc.sel .fi,.fc.sel .fv{border-top-color:color-mix(in srgb,var(--bg) 25%,var(--ink))}
+.fc.sel .fval.pos{color:color-mix(in srgb,var(--win) 70%,var(--bg))}
+.fc.sel .fval.neg{color:color-mix(in srgb,var(--bg) 60%,var(--ink));opacity:1}
+.selmark{position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:var(--bg);font:700 10px/16px var(--f-body);text-align:center}
+.fcard.picked{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.onslip{display:inline-block;background:var(--ink);color:var(--bg);font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:4px;margin-right:6px;vertical-align:1px}
+.slipbar{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 10px 10px 14px;box-shadow:0 6px 20px color-mix(in srgb,var(--ink) 35%,transparent)}
+.slipbar .sbn{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.slipbar .sbn b{font-family:var(--f-disp);font-size:1.05rem}
+.slipbar .sbc{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--bg);font:700 1rem var(--f-disp)}
+.slipbar .sbm{font-size:.8rem;color:color-mix(in srgb,var(--loss) 60%,var(--bg));flex-basis:100%;order:3}
+.slipbar .btn.solid{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+.kcols{display:grid;gap:14px}
+@media (min-width:880px){.kcols{grid-template-columns:minmax(0,400px) minmax(0,1fr);align-items:start}}
+.kpanel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px;min-width:0}
+.kpanel.busy{opacity:.55}
+.khead{font:700 .95rem var(--f-disp);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.krows{display:grid;gap:8px}
+.kmrow{display:grid;grid-template-columns:22px 18px minmax(0,1fr) minmax(0,1fr) 58px;grid-template-areas:"on idx name name del" ". . own bk edge";gap:6px 8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.kmrow .kon{grid-area:on}.kmrow .kidx{grid-area:idx}.kmrow .kmn{grid-area:name;min-width:0}.kmrow .kdel{grid-area:del;justify-self:end}
+.kmrow .kf:nth-of-type(1){grid-area:own}.kmrow .kf:nth-of-type(2){grid-area:bk}.kmrow .kedge{grid-area:edge}
+.kmrow.offm .kmn,.kmrow.offm .kf,.kmrow.offm .kedge,.kmrow.offm .kidx{opacity:.4}
+.kidx{font:700 1.1rem var(--f-disp);color:var(--muted);text-align:center}
+.kmn{display:grid;line-height:1.25}.kmn b{font-size:.95rem}.kmn span{font-size:.78rem;color:var(--muted)}
+.kon{width:20px;height:20px;accent-color:var(--accent)}
+.kf{display:grid;gap:2px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;min-width:0}
+.kcalc input:not([type=checkbox]):not([type=range]){font:600 .95rem var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 8px;width:100%;box-sizing:border-box;min-width:0}
+.kedge{font-size:.72rem;font-weight:700;text-align:center;border-radius:999px;padding:3px 0;align-self:end;margin-bottom:5px;font-variant-numeric:tabular-nums}
+.kedge.pos{background:color-mix(in srgb,var(--win) 18%,var(--surface));color:var(--win)}
+.kedge.neg{background:color-mix(in srgb,var(--loss) 14%,var(--surface));color:var(--loss)}
+.kdel{background:none;border:1px solid var(--line);color:var(--muted);width:30px;height:30px;border-radius:6px;font-size:1rem;cursor:pointer;padding:0}
+.kdel:hover{color:var(--loss);border-color:var(--loss)}
+.ksettings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kfold{display:grid;gap:6px}
+.fchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 8px;font-size:.85rem;cursor:pointer;background:var(--bg)}
+.fchip input{width:16px;height:16px;accent-color:var(--accent)}
+.fchip:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.kmode{display:grid;grid-template-columns:1fr 1fr}.kmode button{padding:8px 6px}
+.kchk{display:flex;gap:8px;align-items:center;font-size:.88rem;cursor:pointer}
+.kchk input{width:18px;height:18px;accent-color:var(--accent)}
+.kchk[hidden],#kmanual[hidden]{display:none}
+#kmanual{display:grid;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
+.ktilt{display:grid;gap:4px}.ktilt input{width:100%;accent-color:var(--accent)}
+.ktilt .ends{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted)}
+.kfrow{display:grid;grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);gap:8px;align-items:center;font-size:.86rem}
+.kfrow input{text-align:right;background:var(--surface)!important}
+.kfrow .sum{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.82rem}
+.kfrow.head{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.kfrow.head span+span{text-align:right}
+.kfrow.tot{border-top:1px solid var(--line);padding-top:8px;font-weight:600}.kfrow.tot .sum{color:var(--ink)}
+.kbig{display:flex;flex-wrap:wrap;gap:6px 26px;align-items:baseline}
+.kbig .l,.kstat .l{font-size:.76rem;color:var(--muted);display:block}
+.kbig .v{font:700 2rem/1 var(--f-disp);font-variant-numeric:tabular-nums}
+.kstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.kstat{border-top:1px solid var(--line);padding-top:8px}
+.kstat .v{font:700 1.3rem var(--f-disp);font-variant-numeric:tabular-nums}
+.pv{color:var(--win)}.nv{color:var(--loss)}
+.kres{display:inline-block;border-radius:4px;padding:1px 6px;font-weight:600}
+.kres.pv{background:color-mix(in srgb,var(--win) 15%,var(--surface))}.kres.nv{background:color-mix(in srgb,var(--loss) 13%,var(--surface))}
+.ktable{font-size:.88rem}.ktable td{text-align:left;font-variant-numeric:tabular-nums;padding:7px 4px}.ktable th{padding:6px 4px}
+.ktable td.r,.ktable th.r{text-align:right}
+.ktable td.lbl{font-weight:600}
+.ktable tbody tr{cursor:default}.ktable tbody tr:hover{background:none}
+.ktable tr.grp td{font:700 .88rem var(--f-disp);letter-spacing:.05em;text-transform:uppercase;color:var(--accent);padding-top:12px;border-bottom:none}
+.kchip{display:inline-block;min-width:1.4em;text-align:center;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-right:3px;font-size:.8rem;font-weight:600}
+.kbars{display:grid;gap:6px}
+.kbar{display:grid;grid-template-columns:64px minmax(0,1fr) 88px;gap:10px;align-items:center;font-size:.86rem}
+.kbar .track{height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
+.kbar .fill{display:block;height:100%;background:var(--accent);border-radius:5px}
+.kbar .amt{text-align:right;font-variant-numeric:tabular-nums}
+.kempty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:22px 18px;display:grid;gap:10px;justify-items:start}
+.kemptyart{display:grid;grid-template-columns:repeat(5,28px);gap:4px}
+.kemptyart span{height:38px;border-radius:6px;background:var(--bg)}
+.kemptyart span.on{background:var(--ink)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .tip .sc .num{font-size:1.05rem;letter-spacing:.02em}
 @media (max-width:420px){.tip{grid-template-columns:1fr}.tip .one{text-align:left}}
@@ -220,6 +303,9 @@ details.note p{margin-top:6px}
 @media (max-width:440px){.tab{font-size:.88rem;letter-spacing:.02em;padding-inline:3px}h1{font-size:1.45rem}}
 .heat{display:inline-block;min-width:2.8em;padding:2px 4px;border-radius:4px;text-align:right}
 @media (prefers-reduced-motion:no-preference){.pbar div,.wdl i{transition:width .3s ease}}
+@media (max-width:560px){.tl-long{display:none}.tl-short{display:inline}}
+@media (max-width:440px){nav.tabs{gap:0}.tab{font-size:.8rem;letter-spacing:0;padding-inline:1px;flex:1 1 auto}}
+@media (max-width:380px){.tab{font-size:.72rem}}
 </style>
 
 </head>
@@ -231,8 +317,9 @@ details.note p{margin-top:6px}
     <button class="tab" role="tab" data-v="rank" id="t-rank">Rangsor</button>
     <button class="tab" role="tab" data-v="team" id="t-team">Csapat</button>
     <button class="tab" role="tab" data-v="match" id="t-match">Meccsek</button>
-    <button class="tab" role="tab" data-v="tips" id="t-tips">Tippek</button>
     <button class="tab" role="tab" data-v="season" id="t-season">Szezon</button>
+    <button class="tab" role="tab" data-v="tips" id="t-tips">Tippek</button>
+    <button class="tab" role="tab" data-v="combo" id="t-combo"><span class="tl-long">Kombináció</span><span class="tl-short">Kombi</span><span class="tbadge" id="tbadge"></span></button>
   </nav>
 </div></header>
 <main><div class="wrap" id="view"></div></main>
@@ -345,9 +432,11 @@ function tipData(p,o){               // a rács adatai: modell (ill. piachoz iga
 function fGrid(td,opt){              // F elrendezés: modell / iroda / value+kelly
   opt=opt||{};
   const dim=opt.range&&rangeOn();
+  const pk=opt.pick, cur=pk?pickOf(pk.id):null;
   const cell=c=>{
-    const isV=c.io&&c.ev*100>=valueMin&&(!dim||c.inR), out=dim&&c.io&&!c.inR;
-    return `<div class="fc${isV?' v':''}${out?' out':''}">
+    const isV=c.io&&c.ev*100>=valueMin&&(!dim||c.inR), out=dim&&c.io&&!c.inR, sel=cur&&cur.k===c.k;
+    const pa=pk?` data-pick="${pk.id}" data-k="${c.k}" data-lab="${c.lab}" data-p="${c.p.toFixed(4)}" data-io="${c.io||''}" data-lg="${pk.lg}" data-date="${pk.date}" data-name="${esc(pk.name)}" role="button" tabindex="0" aria-pressed="${!!sel}" aria-label="${c.lab} tipp ${sel?'levétele a szelvényről':'a szelvényre'}"`:'';
+    return `<div class="fc${isV?' v':''}${out&&!sel?' out':''}${sel?' sel':''}${pk?' pickable':''}"${pa}>${sel?'<span class="selmark" aria-hidden="true">✓</span>':''}
       <div class="fk">${c.lab}</div>
       <div class="fs fm"><span class="fb">${od(c.p)}</span><span class="fp">${pc(c.p)}</span></div>
       <div class="fs fi">${c.io?`<span class="fb">${dec(c.io)}</span><span class="fp">${pc(c.ip)}</span>`:'<span class="fp">–</span>'}</div>
@@ -614,7 +703,7 @@ function vMatch(){
     ${(()=>{const fx=M.remaining.find(r=>r[1]===state.home&&r[2]===state.away&&r[0]>=TODAY);
       const o=fx&&ODDS&&ODDS.leagues?oddsFor(M.lg,M)[fx[0]+'|'+fx[1]+'|'+fx[2]]||null:null, td=tipData(P,o);
       return `<article class="fcard"><div class="fhd"><span class="ftm">Tippek</span><span class="fmeta">${fx?(o?'irodai átlag · '+fd(fx[0]):'nincs irodai szorzó · '+fd(fx[0])):'nincs kiírt meccs, csak modell'}</span></div>
-        ${fGrid(td)}<div class="fsh">Végeredmény</div>${scoreBoxes(td)}</article>`})()}
+        ${fGrid(td,fx?{pick:{id:pickKey(M.lg,fx),lg:M.lg,date:fx[0],name:M.L.teams[fx[1]]+' – '+M.L.teams[fx[2]]}}:{})}<div class="fsh">Végeredmény</div>${scoreBoxes(td)}</article>`})()}
     <p class="small muted">${esc(H.name)} támadása ${r0(H.A)} a(z) ${esc(Aw.name)} ${r0(Aw.D)}-as védelme ellen, és fordítva ${r0(Aw.A)} a ${r0(H.D)} ellen. A hazai pálya előnye a liga átlagából jön (${M.muH.toFixed(2)} vs. ${M.muA.toFixed(2)} gól meccsenként).</p>
     <p class="small muted">Az odds a modell szerinti tiszta szorzó (1 ÷ esély), irodai árrés nélkül.</p>
     <h3>A két csapat ereje meccsről meccsre</h3>
@@ -665,10 +754,10 @@ function vTips(){
   for(const x of rows.slice(0,tipsShow)){
     const {Mx,r,td}=x;
     if(grouped&&r[0]!==lastD){lastD=r[0];html+=`<div class="tday">${fd(lastD)} <span class="muted">${dn(lastD)}</span></div>`}
-    html+=`<article class="fcard">
-      <div class="fhd clickable" data-pair="${r[1]}_${r[2]}" data-lg="${x.lg}" role="button" tabindex="0"><span class="ftm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}</span><span class="fmeta">${tipsAll?esc(SHORTLG[x.lg])+' · ':''}${grouped?'':fd(r[0])}</span></div>
-      ${fGrid(td,{range:true})}
-      <div class="fsh">Végeredmény</div>${scoreBoxes(td)}
+    html+=`<article class="fcard${pickOf(pickKey(x.lg,r))?' picked':''}">
+      <div class="fhd clickable" data-pair="${r[1]}_${r[2]}" data-lg="${x.lg}" role="button" tabindex="0"><span class="ftm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}</span><span class="fmeta">${[tipsAll?esc(SHORTLG[x.lg]):'',grouped?'':fd(r[0])].filter(Boolean).join(' · ')}</span></div>
+      ${fGrid(td,{range:true,pick:{id:pickKey(x.lg,r),lg:x.lg,date:r[0],name:Mx.L.teams[r[1]]+' – '+Mx.L.teams[r[2]]}})}
+      <div class="fsh"><span>Végeredmény</span>${pickOf(pickKey(x.lg,r))?'<span class="onslip">szelvényen</span>':''}</div>${scoreBoxes(td)}
     </article>`;
   }
   const upd=hasOdds&&ODDS.updated?new Date(ODDS.updated):null;
@@ -701,7 +790,7 @@ function vTips(){
   </div>`;
   const expl={time:'Dátum szerint, naponként csoportosítva.',score:'Elöl azok a meccsek, ahol a legvalószínűbb végeredménynek a legnagyobb az esélye.',value:valueMode==='kelly'?'Elöl a legnagyobb Kelly-arányú tipp.':'Elöl a legnagyobb nyers value.'}[sortMode];
   return `<section class="sec"><h2>Tippek</h2>${ctl}
-    <p class="small muted">${expl}${vOnly?` Csak a legalább +${valueMin}% value-t tartalmazó meccsek.`:''}${hasOdds&&rangeOn()?` A ${num2(oddsMin)}–${num2(oddsMax)} sávon kívüli tippek halványak.`:''} A csapatnevekre koppintva megnyílik a meccs elemzése.</p>
+    <p class="small muted">${expl}${vOnly?` Csak a legalább +${valueMin}% value-t tartalmazó meccsek.`:''}${hasOdds&&rangeOn()?` A ${num2(oddsMin)}–${num2(oddsMax)} sávon kívüli tippek halványak.`:''} A csapatnevekre koppintva megnyílik a meccs elemzése, egy cellára koppintva a tipp felkerül a szelvényre.</p>
     ${hasOdds?`<details class="note"><summary><b>Mit jelentenek a számok?</b></summary>
       <p><b>Modell</b>: a modell szorzója (1 ÷ esély) és esélye. Piachoz igazításnál a modell és az irodai esély keveréke.</p>
       <p><b>Iroda</b>: az irodák átlagos szorzója (tőzsdék nélkül) és a belőle adódó esély, árréssel együtt.</p>
@@ -743,18 +832,297 @@ function vSeason(){
 }
 
 /* ---------- vezérlés ---------- */
+/* ---------- Szelvény: a Tippek fülön kijelölt tippek ---------- */
+let picks = store.get('picks',[]).filter(x=>x&&x.id&&x.date>=TODAY);
+const MAXPICK=8;
+let pickMsg='';
+const pickKey=(lg,r)=>lg+'|'+r[0]+'|'+r[1]+'|'+r[2];
+const pickOf=id=>picks.find(x=>x.id===id);
+function savePicks(){store.set('picks',picks)}
+function togglePick(el){
+  const id=el.dataset.pick,k=el.dataset.k, ex=pickOf(id);
+  pickMsg='';
+  if(ex&&ex.k===k){picks=picks.filter(x=>x.id!==id)}
+  else if(ex){Object.assign(ex,{k,lab:el.dataset.lab,p:+el.dataset.p,io:el.dataset.io?+el.dataset.io:null,own:null,bk:null,on:true})}
+  else{
+    if(picks.length>=MAXPICK){pickMsg=`Legfeljebb ${MAXPICK} tipp lehet a szelvényen.`;return}
+    picks.push({id,k,lab:el.dataset.lab,p:+el.dataset.p,io:el.dataset.io?+el.dataset.io:null,lg:el.dataset.lg,date:el.dataset.date,name:el.dataset.name,on:true,own:null,bk:null});
+  }
+  savePicks();
+}
+const tipLabel=(k,lab,name)=>{const [h,a]=name.split(' – ');return {h:h+' győz',d:'Döntetlen',a:a+' győz',o:'2,5 gól felett',u:'2,5 gól alatt'}[k]||lab};
+function slipBar(){
+  if(state.view!=='tips'&&state.view!=='match') return '';
+  if(!picks.length) return '';
+  const on=picks.filter(x=>x.on);
+  const prodB=on.reduce((s,x)=>s*((x.bk??x.io)||1),1);
+  return `<div class="slipbar" role="region" aria-label="Szelvény">
+    <div class="sbn"><span class="sbc">${picks.length}</span><span>tipp a szelvényen${on.length>1?` · eredő szorzó <b>${dec(prodB)}</b>`:''}</span></div>
+    ${pickMsg?`<span class="sbm">${pickMsg}</span>`:''}
+    <button class="btn solid" data-goto="combo">Kombináció →</button></div>`;
+}
+
+/* ---------- Kombináció fül (Kombinációs Kelly-kalkulátor) ---------- */
+let kst = Object.assign({bank:100000,pct:5,offk:[],mode:'kelly',uniform:true,tilt:0,per:{}}, store.get('kombi',{}));
+if(!Array.isArray(kst.offk)) kst.offk=[];
+if(!kst.per||typeof kst.per!=='object') kst.per={};
+function saveK(){store.set('kombi',kst)}
+const knum=v=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:NaN};
+const kft=x=>Math.round(x).toLocaleString('hu-HU')+' Ft';
+const ksft=x=>(Math.round(x)>0?'+':'')+kft(x);
+const kpct=x=>(x*100).toLocaleString('hu-HU',{maximumFractionDigits:1})+'%';
+const kname=k=>k===1?'Szimpla':k+'-es kötés';
+const kshort=k=>k===1?'Szimpla':k+'-es';
+const ownOf=x=>x.own!=null&&x.own!==''?x.own:dec(1/x.p);
+const bkOf=x=>x.bk!=null&&x.bk!==''?x.bk:(x.io?dec(x.io):'');
+
+function vCombo(){
+  if(!picks.length) return `<section class="sec"><h2>Kombináció</h2>
+    <div class="kempty">
+      <div class="kemptyart" aria-hidden="true"><span></span><span class="on"></span><span></span><span></span><span class="on"></span></div>
+      <p><b>Még nincs tipp a szelvényen.</b></p>
+      <p class="small muted">A Tippek fülön koppints a rács egy cellájára (1, X, 2, +2,5 vagy −2,5), és a tipp felkerül ide. Meccsenként egy tipp, legfeljebb ${MAXPICK}. A kalkulátor kiszámolja, hogyan érdemes elosztani a tétet szimplák és kötések között.</p>
+      <button class="btn solid" data-goto="tips">Ugrás a Tippekhez</button>
+    </div></section>`;
+  const rows=picks.map((x,i)=>`<div class="kmrow${x.on?'':' offm'}" data-i="${i}">
+      <input type="checkbox" class="kon" ${x.on?'checked':''} aria-label="${i+1}. tipp a szelvényen">
+      <span class="kidx">${i+1}</span>
+      <div class="kmn"><b>${esc(tipLabel(x.k,x.lab,x.name))}</b><span>${esc(x.name)} · ${fd(x.date)}</span></div>
+      <button class="kdel" type="button" aria-label="${i+1}. tipp törlése">×</button>
+      <label class="kf">Modell<input class="kown" inputmode="decimal" value="${ownOf(x)}"></label>
+      <label class="kf">Iroda<input class="kbk" inputmode="decimal" value="${bkOf(x)}" placeholder="szorzó"></label>
+      <span class="kedge" id="kedge${i}"></span>
+    </div>`).join('');
+  return `<section class="sec kcalc"><h2>Kombináció</h2>
+    <div class="kcols">
+      <div class="kpanel">
+        <div class="khead">Szelvény</div>
+        <div class="krows">${rows}</div>
+        <div class="tline"><button class="btn" data-goto="tips">+ Tipp a Tippek fülről</button><button class="btn" id="kclear">Szelvény ürítése</button></div>
+        <p class="small muted">A modell és az irodai szorzót átírhatod, például a Tippmix szorzójára. A pipával kiveheted a tippet anélkül, hogy törölnéd.</p>
+        <div class="khead">Beállítások</div>
+        <div class="ksettings">
+          <label class="kf">Keret (Ft)<input id="kbank" type="number" inputmode="decimal" min="0" step="1000" value="${kst.bank}"></label>
+          <label class="kf">Tét a keretből (%)<input id="kpct" type="number" inputmode="decimal" min="0" max="100" step="0.5" value="${kst.pct}"></label>
+        </div>
+        <div class="kfold"><span class="small muted">Kötéstípusok a szelvényen</span><div id="kfolds" class="tline"></div></div>
+        <div class="seg kmode" role="group" aria-label="Tétek módja"><button type="button" data-kmode="kelly" aria-pressed="${kst.mode==='kelly'}">Kelly-javaslat</button><button type="button" data-kmode="manual" aria-pressed="${kst.mode==='manual'}">Saját tétek</button></div>
+        <label class="kchk" id="kunibox"${kst.mode==='manual'?' hidden':''}><input type="checkbox" id="kuniform" ${kst.uniform!==false?'checked':''}> Egységes tét kötéstípusonként</label>
+        <div id="kmanual"${kst.mode==='manual'?'':' hidden'}></div>
+      </div>
+      <div class="kpanel" id="kout" aria-live="polite"></div>
+    </div></section>`;
+}
+
+function kOptimize(p,bk,allow,uniform){
+  const n=p.length,N=1<<n,po=new Float64Array(N);
+  for(let o=0;o<N;o++){let pr=1;for(let i=0;i<n;i++)pr*=(o>>i)&1?p[i]:1-p[i];po[o]=pr;}
+  const bets=[];
+  for(let b=1;b<N;b++){
+    if(!allow(b))continue;
+    let odd=1,k=0;for(let i=0;i<n;i++)if((b>>i)&1){odd*=bk[i];k++;}
+    const wins=[];for(let o=0;o<N;o++)if((o&b)===b)wins.push(o);
+    bets.push({mask:b,odd,wins,k});
+  }
+  const M=bets.length,grp=new Int32Array(M);let P=0;
+  if(uniform){const idx={};bets.forEach((b,j)=>{if(!(b.k in idx))idx[b.k]=P++;grp[j]=idx[b.k];});}
+  else{bets.forEach((b,j)=>{grp[j]=j;});P=M;}
+  const x=new Float64Array(P).fill(0.001),G=new Float64Array(P),m1=new Float64Array(P),m2=new Float64Array(P),w=new Float64Array(N);
+  const IT=4000;
+  for(let it=0;it<IT&&M;it++){
+    let S=0;for(let j=0;j<M;j++)S+=x[grp[j]];
+    w.fill(1-S);
+    for(let j=0;j<M;j++){const v=x[grp[j]]*bets[j].odd;if(v)for(const o of bets[j].wins)w[o]+=v;}
+    let base=0;for(let o=0;o<N;o++)base+=po[o]/w[o];
+    G.fill(0);
+    for(let j=0;j<M;j++){let s=0;for(const o of bets[j].wins)s+=po[o]/w[o];G[grp[j]]+=s*bets[j].odd-base;}
+    const a=0.001*Math.min(1,(IT-it)/1500+0.02);
+    for(let q=0;q<P;q++){
+      m1[q]=0.9*m1[q]+0.1*G[q];m2[q]=0.999*m2[q]+0.001*G[q]*G[q];
+      const mh=m1[q]/(1-Math.pow(0.9,it+1)),vh=m2[q]/(1-Math.pow(0.999,it+1));
+      x[q]=Math.max(0,x[q]+a*mh/(Math.sqrt(vh)+1e-9));
+    }
+    S=0;for(let j=0;j<M;j++)S+=x[grp[j]];
+    if(S>0.97)for(let q=0;q<P;q++)x[q]*=0.97/S;
+  }
+  return bets.map((b,j)=>({mask:b.mask,odd:b.odd,f:x[grp[j]]}));
+}
+
+let ktimer, kManualSig='', kLastM=null;
+function kSchedule(){saveK();savePicks();const o=$('#kout');if(o)o.classList.add('busy');clearTimeout(ktimer);ktimer=setTimeout(kCompute,250)}
+function kFolds(){
+  const fb=$('#kfolds');if(!fb)return;
+  const n=picks.length;let h='';
+  for(let k=1;k<=n;k++) h+=`<label class="fchip"><input type="checkbox" data-fk="${k}" ${kst.offk.includes(k)?'':'checked'}> ${kshort(k)}</label>`;
+  fb.innerHTML=h;
+}
+function comboMount(){
+  if(!picks.length) return;
+  kManualSig='';
+  kFolds();
+  kCompute();
+}
+function kCompute(){
+  const out=$('#kout');if(!out)return;out.classList.remove('busy');
+  const bank=knum(kst.bank),pct=knum(kst.pct)/100,manual=kst.mode==='manual';
+  const valid=[],notes=[];let off=0,noEdge=0,negIn=0;
+  picks.forEach((x,i)=>{
+    const o=knum(ownOf(x)),b=knum(bkOf(x)),el=$('#kedge'+i);
+    if(!(o>1)||!(b>1)){if(el){el.textContent='–';el.className='kedge'}if(x.on)noEdge++;return}
+    const e=b/o-1;if(el){el.textContent=(e>0?'+':'')+(e*100).toFixed(1).replace('.',',')+'%';el.className='kedge '+(e>0?'pos':'neg')}
+    if(!x.on){off++;return}
+    if(e>0||manual){valid.push({id:i+1,p:1/o,b,e});if(e<=0)negIn++}else noEdge++;
+  });
+  const head=`<div class="khead">${manual?'Saját tétek eredménye':'Javasolt felosztás'}</div>`;
+  const fail=msg=>{out.innerHTML=head+`<p class="small muted">${msg}</p>`;if(manual){const m=$('#kmanual');if(m)m.innerHTML='<p class="small muted">A tétek beállításához előbb adj meg érvényes tippeket.</p>';kManualSig=''}};
+  if(!(bank>0)||!(pct>0))return fail('Adj meg pozitív keretet és tétszázalékot.');
+  if(!valid.length)return fail(manual?'Nincs bepipált tipp érvényes szorzókkal.':'Nincs olyan bepipált tipp, amelyen előnyöd lenne: a modell szorzójának kisebbnek kell lennie az irodainál.');
+  const n=valid.length;
+  if(![...Array(n)].some((_,i)=>!kst.offk.includes(i+1)))return fail('Egyetlen kötéstípus sincs bejelölve. Jelölj be legalább egyet.');
+  const keyOf=m=>valid.filter((v,j)=>(m>>j)&1).map(v=>v.id).join('+');
+  const popc=m=>{let c=0;while(m){c+=m&1;m>>=1}return c};
+  const allow=m=>!kst.offk.includes(popc(m));
+  const probOf=m=>valid.reduce((s,v,j)=>(m>>j)&1?s*v.p:s,1);
+  const oddOf=m=>valid.reduce((s,v,j)=>(m>>j)&1?s*v.b:s,1);
+  let placed,skipped=0,K=0;
+  if(manual){
+    const cnt={};for(let m=1;m<(1<<n);m++)if(allow(m)){const k=popc(m);cnt[k]=(cnt[k]||0)+1}
+    const ksM=Object.keys(cnt).map(Number).sort((a,b)=>a-b);
+    if(!ksM.length)return fail('Nincs bejelölt kötéstípus.');
+    kRenderManual(ksM,cnt,bank*pct);
+    placed=[];
+    for(let m=1;m<(1<<n);m++){if(!allow(m))continue;const k=popc(m),st=Math.max(0,Math.round(knum(kst.per[k])||0));if(st>0)placed.push({mask:m,k,key:keyOf(m),odd:oddOf(m),prob:probOf(m),stake:st})}
+    if(!placed.length)return fail('Minden kötéstípusnál 0 Ft a tét. Adj meg téteket vagy mozdítsd meg a csúszkát.');
+  }else{
+    const bets=kOptimize(valid.map(v=>v.p),valid.map(v=>v.b),allow,kst.uniform!==false);
+    K=bets.reduce((s,b)=>s+b.f,0);
+    if(!(K>1e-6))return fail('A meghagyott kötésekre a Kelly nem javasol tétet. Jelölj be kisebb kötéstípusokat is.');
+    const used=Math.min(pct,K),scale=bank*used/K;
+    placed=bets.map(b=>({...b,k:popc(b.mask),key:keyOf(b.mask),prob:probOf(b.mask),stake:Math.round(b.f*scale/10)*10})).filter(b=>b.stake>0);
+    skipped=bets.filter(b=>b.f>1e-5).length-placed.length;
+  }
+  const total=placed.reduce((s,b)=>s+b.stake,0);
+  const ev=placed.reduce((s,b)=>s+b.stake*(b.prob*b.odd-1),0);
+  const N=1<<n,byMiss=Array.from({length:n+1},()=>({p:0,min:Infinity,max:-Infinity}));
+  let pWin=0;
+  for(let o=0;o<N;o++){
+    let pr=1;for(let i=0;i<n;i++)pr*=(o>>i)&1?valid[i].p:1-valid[i].p;
+    let ret=0;for(const b of placed)if((o&b.mask)===b.mask)ret+=b.stake*b.odd;
+    const net=ret-total,m=n-popc(o),g=byMiss[m];
+    g.p+=pr;g.min=Math.min(g.min,net);g.max=Math.max(g.max,net);
+    if(net>0)pWin+=pr;
+  }
+  const allWin=byMiss[0].max;
+  const cls=x=>Math.round(x)>0?'pv':Math.round(x)<0?'nv':'';
+  const rangeCell=g=>{const a=Math.round(g.min),b=Math.round(g.max);
+    if(a===b)return `<span class="kres ${cls(a)}">${ksft(a)}</span>`;
+    return `<span class="kres ${cls(a)}">${ksft(a)}</span> … <span class="kres ${cls(b)}">${ksft(b)}</span>`};
+  const missRows=byMiss.map((g,m)=>`<tr><td class="lbl">${m===0?'Mind bejön':m===n?'Mind elmegy':m+' elmegy'}</td><td class="r">${kpct(g.p)}</td><td class="r">${rangeCell(g)}</td></tr>`).join('');
+  if(off)notes.push(`<b>${off} tipp kivéve</b> a szelvényről.`);
+  if(noEdge)notes.push(`<b>${noEdge} bepipált tipp kimaradt</b>, mert nincs rajta előnyöd vagy hiányzik a szorzó.`);
+  if(manual&&negIn)notes.push(`<b>${negIn} tippen nincs előnyöd</b>, mégis szerepel a kötésekben. Ezek rontják a várható profitot.`);
+  if(manual&&Math.abs(total-bank*pct)>=10)notes.push(`Az összes tét a keret <b>${kpct(total/bank)}-a</b>, a beállított ${kpct(pct)} helyett. A csúszka mozgatása visszaállítja.`);
+  if(!manual&&K<pct)notes.push(`A teljes Kelly csak a keret <b>${kpct(K)}-át</b> tenné fel, ezért ennél többet nem javaslok, pedig ${kpct(pct)}-ot adtál meg.`);
+  if(valid.some(v=>v.e>0.15))notes.push(`<b>15% feletti előny</b> a gyakorlatban ritka. Ha a modell túl optimista, a felosztás veszteséges lehet.`);
+  if(skipped>0)notes.push(`${skipped} kötés 10 Ft alatti tétet kapna, ezek kimaradtak.`);
+  const groups={};placed.forEach(b=>{(groups[b.k]=groups[b.k]||[]).push(b)});
+  const ks=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  const chips=key=>key.split('+').map(x=>`<span class="kchip">${x}</span>`).join('');
+  const bars=ks.map(k=>{const s=groups[k].reduce((a,b)=>a+b.stake,0);return `<div class="kbar"><span>${kshort(k)}</span><span class="track"><span class="fill" style="width:${(s/total*100).toFixed(1)}%"></span></span><span class="amt">${kft(s)}</span></div>`}).join('');
+  const table=ks.map(k=>{
+    const live=groups[k].sort((a,b)=>b.stake-a.stake).map(b=>`<tr><td>${chips(b.key)}</td><td class="r">${dec(b.odd)}</td><td class="r">${kft(b.stake)}</td><td class="r">${kft(b.stake*b.odd)}</td></tr>`).join('');
+    return `<tr class="grp"><td colspan="4">${kname(k)} · ${groups[k].length} db</td></tr>`+live}).join('');
+  out.innerHTML=`${head}
+    <div class="kbig"><div><span class="l">Összes tét</span><span class="v">${kft(total)}</span></div><div><span class="l">Szelvények</span><span class="v">${placed.length} db</span></div></div>
+    <div class="kstats">
+      <div class="kstat"><div class="l">Várható profit (modell szerint)</div><div class="v ${cls(ev)}">${ksft(ev)}</div></div>
+      <div class="kstat"><div class="l">Nyereség esélye</div><div class="v">${kpct(pWin)}</div></div>
+      <div class="kstat"><div class="l">Ha minden bejön</div><div class="v pv">${ksft(allWin)}</div></div>
+    </div>
+    <div class="khead">Ha elmegy egy-két tipp</div>
+    <div class="tblwrap"><table class="ktable"><thead><tr><th class="l">Eredmény</th><th class="r">Esély</th><th class="r">Nettó (tól … ig)</th></tr></thead><tbody>${missRows}</tbody></table></div>
+    <p class="small muted">A „tól … ig” attól függ, melyik tipp megy el: a nagyobb szorzójú elvesztése többe kerül.</p>
+    <div class="kbars">${bars}</div>
+    ${notes.map(x=>`<p class="note">${x}</p>`).join('')}
+    <div class="khead">Szelvények</div>
+    <div class="tblwrap"><table class="ktable"><thead><tr><th class="l">Tippek</th><th class="r">Szorzó</th><th class="r">Tét</th><th class="r">Kifizetés</th></tr></thead><tbody>${table}</tbody></table></div>
+    <p class="small muted">${manual?'A tétek a „Saját tétek” beállításból jönnek.':`A felosztás a teljes Kelly arányait követi a megadott tétszázalékra skálázva, 10 Ft-ra kerekítve. Teljes Kelly szerint a keret ${kpct(K)}-a menne fel.`} A számok a tippek sorszámára utalnak.</p>`;
+}
+function kTiltText(t){const q=Math.pow(4,t/100),f=x=>x.toLocaleString('hu-HU',{maximumFractionDigits:2});
+  if(Math.abs(t)<1)return 'Minden szelvény egyforma tétet kap.';
+  return t>0?`Minden eggyel nagyobb kötés szelvényenként ${f(q)}× akkora tétet kap.`:`Minden eggyel kisebb kötés szelvényenként ${f(1/q)}× akkora tétet kap.`}
+function kApplyTilt(){if(!kLastM)return;const {ks,cnt,budget}=kLastM;
+  const q=Math.pow(4,(+kst.tilt||0)/100),w=k=>Math.pow(q,k-ks[0]);
+  const unit=budget/ks.reduce((s,k)=>s+cnt[k]*w(k),0);
+  ks.forEach(k=>{kst.per[k]=Math.max(10,Math.round(unit*w(k)/10)*10);const el=$('#kper'+k);if(el)el.value=kst.per[k]})}
+function kRenderManual(ks,cnt,budget){
+  kLastM={ks,cnt,budget};
+  const sig=ks.map(k=>k+':'+cnt[k]).join(',')+'|'+Math.round(budget);
+  if(sig!==kst.msig){kst.msig=sig;kApplyTilt();saveK()}
+  const box=$('#kmanual');if(!box)return;
+  if(sig!==kManualSig){kManualSig=sig;
+    box.innerHTML=`<div class="ktilt"><label class="small muted" for="ktilt">Tétsúlyozás</label>
+        <input type="range" id="ktilt" min="-100" max="100" step="5" value="${+kst.tilt||0}">
+        <div class="ends"><span>Kis kötésekre több</span><span>Egyforma</span><span>Nagyokra több</span></div>
+        <div class="small" id="ktiltread">${kTiltText(+kst.tilt||0)}</div></div>
+      <div class="kfrow head"><span>Kötés</span><span>Ft / szelvény</span><span>Összesen</span></div>
+      ${ks.map(k=>`<div class="kfrow"><label for="kper${k}">${kname(k)} · ${cnt[k]} db</label><input id="kper${k}" class="kper" data-k="${k}" type="number" inputmode="numeric" min="0" step="10" value="${kst.per[k]??0}"><span class="sum" id="ksum${k}"></span></div>`).join('')}
+      <div class="kfrow tot"><span>Összes tét</span><span></span><span class="sum" id="ksumall"></span></div>`}
+  kUpdateSums();
+}
+function kUpdateSums(){if(!kLastM)return;let t=0;
+  kLastM.ks.forEach(k=>{const s=(Math.max(0,knum(kst.per[k])||0))*kLastM.cnt[k];t+=s;const el=$('#ksum'+k);if(el)el.textContent=kft(s)});
+  const a=$('#ksumall');if(a)a.textContent=kft(t)}
+
+function comboInput(e){
+  const t=e.target;
+  const row=t.closest('.kmrow');
+  if(row){const x=picks[+row.dataset.i];if(!x)return false;
+    if(t.classList.contains('kown')){x.own=t.value;kSchedule();return true}
+    if(t.classList.contains('kbk')){x.bk=t.value;kSchedule();return true}}
+  if(t.id==='kbank'){kst.bank=t.value;kManualSig='';kSchedule();return true}
+  if(t.id==='kpct'){kst.pct=t.value;kManualSig='';kSchedule();return true}
+  if(t.id==='ktilt'){kst.tilt=+t.value;const r=$('#ktiltread');if(r)r.textContent=kTiltText(kst.tilt);kApplyTilt();kUpdateSums();kSchedule();return true}
+  if(t.classList.contains('kper')){kst.per[t.dataset.k]=t.value;kUpdateSums();kSchedule();return true}
+  return false;
+}
+function comboChange(e){
+  const t=e.target;
+  if(t.classList.contains('kon')){const row=t.closest('.kmrow'),x=picks[+row.dataset.i];x.on=t.checked;row.classList.toggle('offm',!t.checked);kSchedule();return true}
+  if(t.dataset.fk){const k=+t.dataset.fk;kst.offk=kst.offk.filter(v=>v!==k);if(!t.checked)kst.offk.push(k);kManualSig='';kSchedule();return true}
+  if(t.id==='kuniform'){kst.uniform=t.checked;kSchedule();return true}
+  return false;
+}
+function comboClick(e){
+  const del=e.target.closest('.kdel');
+  if(del){const i=+del.closest('.kmrow').dataset.i;picks.splice(i,1);savePicks();render();return true}
+  if(e.target.closest('#kclear')){picks=[];savePicks();render();return true}
+  const md=e.target.closest('[data-kmode]');
+  if(md){kst.mode=md.dataset.kmode;saveK();kManualSig='';
+    document.querySelectorAll('[data-kmode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.kmode===kst.mode));
+    $('#kmanual').hidden=kst.mode!=='manual';$('#kunibox').hidden=kst.mode==='manual';kCompute();return true}
+  return false;
+}
+
 function render(){
   document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.lg===state.league));
   document.querySelectorAll('.tab').forEach(c=>c.setAttribute('aria-selected',c.dataset.v===state.view));
   renderStamp();
-  const v={rank:vRank,team:vTeam,match:vMatch,tips:vTips,season:vSeason}[state.view]();
-  $('#view').innerHTML=v;
+  const v={rank:vRank,team:vTeam,match:vMatch,tips:vTips,season:vSeason,combo:vCombo}[state.view]();
+  $('#view').innerHTML=v+slipBar();
+  const tb=$('#tbadge');if(tb)tb.textContent=picks.length?picks.length:'';
+  if(state.view==='combo') comboMount();
   if(state.view==='season'&&!sims[M.lg]) setTimeout(()=>{sims[M.lg]=runSim();if(state.view==='season')render()},30);
 }
 $('#leagues').innerHTML=LEAGUES.map(l=>`<button class="chip" data-lg="${l}">${DATA[l].name}</button>`).join('');
 $('#leagues').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;state.league=b.dataset.lg;state.team=state.home=state.away=null;store.set('lg',state.league);M=getM(state.league);render()});
 document.querySelector('nav.tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;state.view=b.dataset.v;store.set('view',state.view);render();window.scrollTo({top:0})});
 $('#view').addEventListener('click',e=>{
+  const pc_=e.target.closest('[data-pick]');
+  if(pc_){togglePick(pc_);const y=window.scrollY;render();window.scrollTo(0,y);return}
+  const gt=e.target.closest('[data-goto]');
+  if(gt){state.view=gt.dataset.goto;store.set('view',state.view);render();window.scrollTo({top:0});return}
+  if(state.view==='combo'&&comboClick(e))return;
   const pr=e.target.closest('[data-pair]');
   if(pr){const [h,a]=pr.dataset.pair.split('_').map(Number);if(pr.dataset.lg&&pr.dataset.lg!==state.league){state.league=pr.dataset.lg;store.set('lg',state.league);M=getM(state.league)}
     state.home=h;state.away=a;state.view='match';store.set('view','match');render();const p=$('#predictor');if(p)p.scrollIntoView({block:'start'});else window.scrollTo({top:0});return}
@@ -779,11 +1147,13 @@ $('#view').addEventListener('click',e=>{
     const [d,h,a]=k.split('_');(manual[state.league]=manual[state.league]||{})[d+'|'+h+'|'+a]=[g1,g2];store.set('manual',manual);recompute();render();return}
   if(e.target.id==='clearMan'){delete manual[state.league];store.set('manual',manual);recompute();render()}
 });
-$('#view').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-pair]')){e.preventDefault();e.target.closest('[data-pair]').click()}});
+$('#view').addEventListener('keydown',e=>{const t=e.target.closest('[data-pair],[data-pick]');if((e.key==='Enter'||e.key===' ')&&t&&t===e.target){e.preventDefault();t.click()}});
 $('#view').addEventListener('input',e=>{
+  if(state.view==='combo'&&comboInput(e))return;
   if(e.target.id==='simTol'){const v=document.querySelector('.simv');if(v)v.textContent='±'+e.target.value}
 });
 $('#view').addEventListener('change',e=>{
+  if(state.view==='combo'&&comboChange(e))return;
   if(e.target.id==='simTol'){simTol=+e.target.value;store.set('simTol',simTol);const y=window.scrollY;render();window.scrollTo(0,y);const el=$('#simTol');if(el)el.focus();return}
   if(e.target.id==='teamSel'){state.team=+e.target.value;render()}
   if(e.target.id==='hSel'){state.home=+e.target.value;render()}
