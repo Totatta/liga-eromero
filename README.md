@@ -1,6 +1,6 @@
 # Liga Erőmérő
 
-Támadó- és védekezőerő alapú erősorrend, esélylatolgató és idényszimuláció az öt top európai bajnokságra.
+Támadó- és védekezőerő alapú erősorrend, esélylatolgató, tippek, kombinációs kalkulátor és idényszimuláció nyolc bajnokságra: angol, spanyol, német, francia, olasz, holland, portugál és brazil.
 
 **Adatok**
 - **Idei idény:** football-data.org, naponta kétszer frissítve egy GitHub-automatizmussal (`data/friss.json`).
@@ -38,7 +38,7 @@ Támadó- és védekezőerő alapú erősorrend, esélylatolgató és idényszim
    - **Name:** `ODDS_API_KEY`
    - **Secret:** az e-mailben kapott kulcs
 3. Indíts egy kézi futtatást (**Actions → Eredmények frissítése → Run workflow**). Utána megjelenik a `data/odds.json` fájl.
-   - Egy letöltés kb. 10 kreditbe kerül. A szkript naponta (UTC szerint) legfeljebb egyszer kér le, így havonta kb. 300 kredit fogy.
+   - Ligánként 2 kredit egy letöltés. A szkript naponta (UTC szerint) legfeljebb egyszer kér le, és csak azokra a ligákra, ahol a következő 3 napban van meccs. Így 8 ligával havonta kb. 300–350 kredit fogy.
    - Ha aznap már volt letöltés, de mégis frissíteni akarod: a **Run workflow** ablakban pipáld be az „Oddsok újratöltése” opciót.
    - A naplóban látszik a hónapból hátralévő kredit.
 

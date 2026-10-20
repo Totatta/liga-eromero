@@ -14,7 +14,11 @@ const LIGAK = {
   'de.1': 'soccer_germany_bundesliga',
   'fr.1': 'soccer_france_ligue_one',
   'it.1': 'soccer_italy_serie_a',
+  'nl.1': 'soccer_netherlands_eredivisie',
+  'pt.1': 'soccer_portugal_primeira_liga',
+  'br.1': 'soccer_brazil_campeonato',
 };
+const NAPOK = 3; // csak azokra a ligákra kér le oddsot, ahol a következő ennyi napban van meccs
 const TOZSDE = /betfair_ex|matchbook|smarkets|betdaq/i; // fogadási tőzsdék kulcsai
 const FAJL = 'data/odds.json';
 const most = new Date();
@@ -28,9 +32,27 @@ if (!force && regi?.updated && regi.updated.slice(0, 10) === most.toISOString().
 }
 
 const r2 = x => Math.round(x * 100) / 100;
+// Melyik ligában van meccs a következő NAPOK napban? (a data/friss.json alapján, kreditmentesen)
+let friss = null;
+try { friss = JSON.parse(await readFile('data/friss.json', 'utf8')); } catch {}
+const ma = most.toISOString().slice(0, 10);
+const hatar = new Date(most.getTime() + NAPOK * 864e5).toISOString().slice(0, 10);
+const vanMeccs = lg => {
+  const ms = friss?.leagues?.[lg]?.matches;
+  if (!ms) return true; // ha nincs adat, inkább lekérjük
+  return ms.some(m => m.length < 5 && m[0] >= ma && m[0] <= hatar);
+};
+const kihagyott = [];
 const leagues = {};
 let maradek = null, hiba = 0;
 for (const [lg, sport] of Object.entries(LIGAK)) {
+  if (!vanMeccs(lg)) {
+    kihagyott.push(lg);
+    // a korábbi oddsokból csak a még le nem játszott meccsek maradnak
+    const r = (regi?.leagues?.[lg] || []).filter(e => e.date >= ma);
+    if (r.length) leagues[lg] = r;
+    continue;
+  }
   try {
     const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds?regions=eu&markets=h2h,totals&oddsFormat=decimal&dateFormat=iso&apiKey=${KEY}`;
     const r = await fetch(url);
@@ -63,8 +85,9 @@ for (const [lg, sport] of Object.entries(LIGAK)) {
     if (regi?.leagues?.[lg]) leagues[lg] = regi.leagues[lg];
   }
 }
+if (kihagyott.length) console.log(`Kihagyva (nincs meccs ${NAPOK} napon belül): ${kihagyott.join(', ')}`);
 if (maradek !== null) console.log(`Hátralévő kredit ebben a hónapban: ${maradek}`);
-if (hiba === Object.keys(LIGAK).length) { console.error('Egyik liga oddsai sem töltődtek le.'); process.exit(1); }
+if (hiba && hiba === Object.keys(LIGAK).length - kihagyott.length) { console.error('Egyik liga oddsai sem töltődtek le.'); process.exit(1); }
 await mkdir('data', { recursive: true });
 await writeFile(FAJL, JSON.stringify({ source: 'the-odds-api.com', kind: 'avg-no-exchanges', updated: most.toISOString(), remaining: maradek, leagues }));
 console.log('Mentve:', FAJL);

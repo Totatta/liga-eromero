@@ -1,14 +1,17 @@
-// Letölti az öt top liga idei meccseit a football-data.org-ról, és elmenti a data/friss.json fájlba.
+// Letölti a nyolc liga idei meccseit a football-data.org-ról, és elmenti a data/friss.json fájlba.
 // A GitHub-automatizmus futtatja naponta kétszer. Kézzel: FOOTBALL_DATA_KEY=... node scripts/frissites.mjs
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 const KEY = process.env.FOOTBALL_DATA_KEY;
 if (!KEY) { console.error('Hiányzik a FOOTBALL_DATA_KEY (a football-data.org API-kulcs).'); process.exit(1); }
 
-const LIGAK = { 'en.1': 'PL', 'es.1': 'PD', 'de.1': 'BL1', 'fr.1': 'FL1', 'it.1': 'SA' };
+const LIGAK = { 'en.1': 'PL', 'es.1': 'PD', 'de.1': 'BL1', 'fr.1': 'FL1', 'it.1': 'SA', 'nl.1': 'DED', 'pt.1': 'PPL', 'br.1': 'BSA' };
+const NAPTARI = new Set(['br.1']);   // naptári évben játszott ligák (pl. Brazília: 2026)
 const most = new Date();
 const kezdoEv = most.getUTCMonth() >= 6 ? most.getUTCFullYear() : most.getUTCFullYear() - 1; // júliustól új idény
 const IDENY = `${kezdoEv}-${String(kezdoEv + 1).slice(2)}`;   // pl. 2026-27
+const evOf = lg => NAPTARI.has(lg) ? most.getUTCFullYear() : kezdoEv;
+const idenyOf = lg => NAPTARI.has(lg) ? String(most.getUTCFullYear()) : IDENY;
 const FAJL = 'data/friss.json';
 const varj = ms => new Promise(r => setTimeout(r, ms));
 
@@ -19,7 +22,7 @@ const leagues = {};
 let hiba = 0;
 for (const [lg, kod] of Object.entries(LIGAK)) {
   try {
-    const r = await fetch(`https://api.football-data.org/v4/competitions/${kod}/matches?season=${kezdoEv}`,
+    const r = await fetch(`https://api.football-data.org/v4/competitions/${kod}/matches?season=${evOf(lg)}`,
       { headers: { 'X-Auth-Token': KEY } });
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const j = await r.json();
@@ -35,7 +38,7 @@ for (const [lg, kod] of Object.entries(LIGAK)) {
       matches.push(kesz ? [datum, h, a, ft.home, ft.away] : [datum, h, a]);
     }
     matches.sort((x, y) => x[0].localeCompare(y[0]));
-    leagues[lg] = { season: IDENY, matches, short };
+    leagues[lg] = { season: idenyOf(lg), matches, short };
     console.log(`${lg}: ${matches.filter(m => m.length === 5).length} lejátszott / ${matches.length} meccs`);
   } catch (e) {
     hiba++;
