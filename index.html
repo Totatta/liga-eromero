@@ -107,6 +107,15 @@ select{font:500 .95rem var(--f-body);color:var(--ink);background:var(--surface);
 .grid6{display:grid;grid-template-columns:2em repeat(6,minmax(0,1fr));gap:2px;font-variant-numeric:tabular-nums}
 .grid6 div{text-align:center;font-size:.78rem;padding:7px 0;border-radius:3px}
 .grid6 .h{color:var(--muted);font-weight:600;background:none}
+.g6wrap{display:grid;grid-template-columns:18px minmax(0,1fr);grid-template-areas:". top" "side grid";gap:2px 4px}
+.g6top{grid-area:top;padding-left:2em;text-align:center;font:600 .82rem var(--f-body);color:var(--away,#c92a2a)}
+.g6top span,.g6side span{white-space:nowrap}
+.g6side{grid-area:side;display:flex;align-items:center;justify-content:center;padding-top:28px}
+.g6side span{writing-mode:vertical-rl;transform:rotate(180deg);font:600 .82rem var(--f-body);color:var(--win)}
+.g6wrap .grid6{grid-area:grid}
+.g6wrap{margin-bottom:6px}
+.g6side{flex-direction:column;gap:3px}.g6ar{color:var(--win);font-size:.9rem;line-height:1}
+.g6top{color:var(--loss)}
 .fx{display:grid;grid-template-columns:minmax(0,1fr) 7.5em;gap:4px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .fx .tm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fx .mini{display:flex;height:10px;border-radius:5px;overflow:hidden}
@@ -723,8 +732,11 @@ function vMatch(){
         `<div class="chart">${sel.length?lineChart(sel.flatMap(k=>pairs[k]),'A két csapat erejének alakulása'):'<p class="muted small" style="padding:20px">Kapcsolj be legalább egy párosítást.</p>'}</div>
         <div class="legend"><span>folytonos vonal: ${esc(H.name)} (hazai)</span><span>szaggatott vonal: ${esc(Aw.name)} (vendég)</span><span>vízszintesen: hányadik meccs az idényben</span></div>`})()}
     <h3>Pontos eredmény esélye, %</h3>
-    <div class="grid6" aria-label="Hazai gólok soronként, vendég gólok oszloponként">${gridH}</div>
-    <p class="small muted">Sor: ${esc(H.name)} góljai · oszlop: ${esc(Aw.name)} góljai</p>
+    <div class="g6wrap">
+      <div class="g6top"><span>${esc(Aw.name)} góljai →</span></div>
+      <div class="g6side"><span>${esc(H.name)} góljai</span><b class="g6ar" aria-hidden="true">↓</b></div>
+      <div class="grid6" aria-label="${esc(H.name)} góljai soronként, ${esc(Aw.name)} góljai oszloponként">${gridH}</div>
+    </div>
     ${similarHtml(H,Aw)}
   </section>
   ${overdue.length?`<section class="sec"><h3>Hiányzó eredmények (${overdue.length})</h3>
