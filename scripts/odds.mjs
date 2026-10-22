@@ -43,6 +43,21 @@ const vanMeccs = lg => {
   return ms.some(m => m.length < 5 && m[0] >= ma && m[0] <= hatar);
 };
 const kihagyott = [];
+// Oddsmozgás: meccsenként kimenetenkénti előzmény [[nap, szorzó], ...], a korábbi fájlból folytatva
+const regiNap = regi?.updated ? regi.updated.slice(0, 10) : null;
+function withHist(lg, x) {
+  const p = (regi?.leagues?.[lg] || []).find(e => e.home === x.home && e.away === x.away && e.date === x.date);
+  const hist = {};
+  for (const k of ['h', 'd', 'a', 'o', 'u']) {
+    let h = p?.hist?.[k] ? p.hist[k].map(v => v.slice()) : (p?.avg?.[k] && regiNap ? [[regiNap, p.avg[k]]] : []);
+    if (x.avg[k] != null) {
+      if (h.length && h[h.length - 1][0] === ma) h[h.length - 1][1] = x.avg[k];   // aznapi újratöltés: felülírja
+      else h.push([ma, x.avg[k]]);
+    }
+    if (h.length) hist[k] = h.slice(-10);
+  }
+  return { ...x, hist };
+}
 const leagues = {};
 let maradek = null, hiba = 0;
 for (const [lg, sport] of Object.entries(LIGAK)) {
@@ -77,7 +92,7 @@ for (const [lg, sport] of Object.entries(LIGAK)) {
       const avg = {}, n = {};
       for (const k in gy) if (gy[k].length) { avg[k] = r2(gy[k].reduce((s, v) => s + v, 0) / gy[k].length); n[k] = gy[k].length; }
       return { date: e.commence_time.slice(0, 10), home: e.home_team, away: e.away_team, avg, n };
-    }).filter(x => Object.keys(x.avg).length);
+    }).filter(x => Object.keys(x.avg).length).map(x => withHist(lg, x));
     console.log(`${lg}: ${leagues[lg].length} meccs átlagszorzói`);
   } catch (e) {
     hiba++;

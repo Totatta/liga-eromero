@@ -311,6 +311,15 @@ details.note p{margin-top:6px}
 .kemptyart{display:grid;grid-template-columns:repeat(5,28px);gap:4px}
 .kemptyart span{height:38px;border-radius:6px;background:var(--bg)}
 .kemptyart span.on{background:var(--ink)}
+.mv{display:inline-block;margin-left:3px;font-size:.66rem;line-height:1}
+.mv{color:var(--muted)}
+.mv.conf{color:var(--win)}.mv.warn{color:var(--loss)}
+.fc.sel .mv{color:inherit}
+.mvline{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.mvh{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.mvi b{color:var(--ink);font-weight:600}
+.mvp{font-weight:700;color:var(--ink)}
+.mvi.conf .mvp{color:var(--win)}.mvi.warn .mvp{color:var(--loss)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .tip .sc .num{font-size:1.05rem;letter-spacing:.02em}
 @media (max-width:420px){.tip{grid-template-columns:1fr}.tip .one{text-align:left}}
@@ -360,6 +369,8 @@ let simTol = store.get('simTol',40), simPrev = store.get('simPrev',false), simMo
 let teamSer = store.get('teamSer',{S:true,A:true,D:true}), matchSer = store.get('matchSer',{str:true,att:true,def:false});
 let ODDS = null;                              // data/odds.json (The Odds API), ha elérhető
 let valueOnly = store.get('valueOnly',false), valueMin = store.get('valueMin',5), tipSort = store.get('tipSort','time'), tipDays = store.get('tipDays',7);
+let confOnly = store.get('confOnly',false);
+const MOVE_MIN=0.03;   // ennél kisebb oddsváltozást nem jelölünk
 let oddsMin = store.get('oddsMin',1.5), oddsMax = store.get('oddsMax',2.2), rangeFlag = store.get('rangeFlag',true);
 let blendOn = store.get('blendOn',false), blendVal = store.get('blendVal',0.5), valueMode = store.get('valueMode','kelly');
 if(tipSort==='kelly'){tipSort='value';valueMode='kelly'}
@@ -439,7 +450,10 @@ function tipData(p,o){               // a rács adatai: modell (ill. piachoz iga
   const cells=defs.map(([k,lab,pm])=>{
     const pa=(blendW&&mkt[k]!=null)?(1-blendW)*pm+blendW*mkt[k]:pm, io=A[k]||null;
     const ev=io?pa*io-1:null, kl=io?kelly(pa,io):null;
-    return {k,lab,p:pa,pModel:pm,io,ip:io?1/io:null,ev,kelly:kl,inR:io?inRange(io):false};
+    const hs=o&&o.hist&&o.hist[k]||null, first=hs&&hs.length>1?hs[0][1]:null;
+    const mv=first&&io?io/first-1:null, mvOn=mv!=null&&Math.abs(mv)>=MOVE_MIN;
+    const isVal=io&&ev*100>=valueMin;
+    return {k,lab,p:pa,pModel:pm,io,ip:io?1/io:null,ev,kelly:kl,inR:io?inRange(io):false,hs,mv,mvOn,conf:isVal&&mvOn&&mv<0,warn:isVal&&mvOn&&mv>0};
   });
   const sc=[];for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)sc.push([p.grid[i][j],i,j]);sc.sort((x,y)=>y[0]-x[0]);
   return {cells,scores:sc.slice(0,3),hasOdds:!!o};
@@ -451,13 +465,18 @@ function fGrid(td,opt){              // F elrendezés: modell / iroda / value+ke
   const cell=c=>{
     const isV=c.io&&c.ev*100>=valueMin&&(!dim||c.inR), out=dim&&c.io&&!c.inR, sel=cur&&cur.k===c.k;
     const pa=pk?` data-pick="${pk.id}" data-k="${c.k}" data-lab="${c.lab}" data-p="${c.p.toFixed(4)}" data-io="${c.io||''}" data-lg="${pk.lg}" data-date="${pk.date}" data-name="${esc(pk.name)}" role="button" tabindex="0" aria-pressed="${!!sel}" aria-label="${c.lab} tipp ${sel?'levétele a szelvényről':'a szelvényre'}"`:'';
-    return `<div class="fc${isV?' v':''}${out&&!sel?' out':''}${sel?' sel':''}${pk?' pickable':''}"${pa}>${sel?'<span class="selmark" aria-hidden="true">✓</span>':''}
+    return `<div class="fc${isV?' v':''}${isV&&c.conf?' conf':''}${out&&!sel?' out':''}${sel?' sel':''}${pk?' pickable':''}"${pa}>${sel?'<span class="selmark" aria-hidden="true">✓</span>':''}
       <div class="fk">${c.lab}</div>
       <div class="fs fm"><span class="fb">${od(c.p)}</span><span class="fp">${pc(c.p)}</span></div>
-      <div class="fs fi">${c.io?`<span class="fb">${dec(c.io)}</span><span class="fp">${pc(c.ip)}</span>`:'<span class="fp">–</span>'}</div>
+      <div class="fs fi">${c.io?`<span class="fb">${dec(c.io)}</span><span class="fp">${pc(c.ip)}${c.mvOn?`<span class="mv${c.conf?' conf':c.warn?' warn':''}" title="Oddsmozgás: ${dec(c.hs[0][1])} → ${dec(c.io)}">${c.mv<0?'▼':'▲'}</span>`:''}</span>`:'<span class="fp">–</span>'}</div>
       <div class="fs fv">${c.io?`<span class="fval ${isV?'pos':'neg'}">${sgnPct0(c.ev)}</span><span class="fkl">${c.kelly>0?'k '+pc1(c.kelly):'k –'}</span>`:'<span class="fp">–</span>'}</div>
     </div>`};
   return `<div class="fg"><div class="flab"><div style="height:44px"><span>${blendW?'igazított':'modell'}</span></div><div style="height:45px"><span>iroda</span></div><div style="height:35px"><span>value</span></div></div>${td.cells.map(cell).join('')}</div>`;
+}
+function moveLine(td){
+  const ms=td.cells.filter(c=>c.mvOn);
+  if(!ms.length) return '';
+  return `<div class="mvline"><span class="mvh">Oddsmozgás</span>${ms.map(c=>`<span class="mvi${c.conf?' conf':c.warn?' warn':''}"><b>${c.lab}</b> ${dec(c.hs[0][1])} → ${dec(c.io)} <span class="mvp">${c.mv<0?'▼':'▲'}${Math.abs(Math.round(c.mv*100))}%</span></span>`).join('')}</div>`;
 }
 function scoreBoxes(td){
   return `<div class="fsg">${td.scores.map(s=>`<div class="fsb"><span class="fr">${s[1]}-${s[2]}</span><span class="fx2"><b>${pc1(s[0])}</b> · ${od(s[0])}</span></div>`).join('')}</div>`;
@@ -757,6 +776,7 @@ function vTips(){
       const elig=td.cells.filter(c=>c.io&&(!rangeOn()||c.inR));
       const vals=elig.filter(c=>c.ev*100>=valueMin);
       if(vOnly&&!vals.length) continue;
+      if(confOnly&&!tipScoreMode&&!vals.some(c=>c.conf)) continue;
       rows.push({lg,Mx,r,td,
         bestK:elig.length?Math.max(...elig.map(c=>c.kelly)):-Infinity,
         bestV:elig.length?Math.max(...elig.map(c=>c.ev)):-Infinity})}}
@@ -775,6 +795,7 @@ function vTips(){
     html+=`<article class="fcard${pickOf(pickKey(x.lg,r))?' picked':''}">
       <div class="fhd clickable" data-pair="${r[1]}_${r[2]}" data-lg="${x.lg}" role="button" tabindex="0"><span class="ftm">${esc(Mx.L.teams[r[1]])} – ${esc(Mx.L.teams[r[2]])}</span><span class="fmeta">${[tipsAll?esc(SHORTLG[x.lg]):'',grouped?'':fd(r[0])].filter(Boolean).join(' · ')}</span></div>
       ${fGrid(td,{range:true,pick:{id:pickKey(x.lg,r),lg:x.lg,date:r[0],name:Mx.L.teams[r[1]]+' – '+Mx.L.teams[r[2]]}})}
+      ${moveLine(td)}
       <div class="fsh"><span>Végeredmény</span>${pickOf(pickKey(x.lg,r))?'<span class="onslip">szelvényen</span>':''}</div>${scoreBoxes(td)}
     </article>`;
   }
@@ -791,7 +812,8 @@ function vTips(){
       <div class="tline">${sbtn('time','Időrend')}${sbtn('score','Végeredmény')}</div></div></div>
     ${hasOdds?`<div class="trow${tipScoreMode?' dis':''}"${tipScoreMode?' aria-disabled="true"':''}><span class="tlab">Value szűrő</span><div class="tbody"><div class="tline">
       ${sw('valueOnly',valueOnly,'Csak value tippek')}<span class="tsub${valueOnly?'':' off'}">csak legalább</span>
-      <select id="valueMin" class="nsel"${valueOnly?'':' disabled'}>${opt([0,3,5,10,15,20].map(v=>[v,'+'+v+'%']),valueMin)}</select></div></div></div>
+      <select id="valueMin" class="nsel"${valueOnly?'':' disabled'}>${opt([0,3,5,10,15,20].map(v=>[v,'+'+v+'%']),valueMin)}</select></div>
+      <div class="tline">${sw('confOnly',confOnly,'Csak megerősített value')}<span class="tsub${confOnly?'':' off'}">csak megerősített <span class="mv conf">▼</span></span></div></div></div>
     <div class="trow${tipScoreMode?' dis':''}"${tipScoreMode?' aria-disabled="true"':''}><span class="tlab">Irodai szorzó</span><div class="tbody"><div class="tline">
       ${sw('rangeFlag',rangeFlag,'Szorzósáv szűrő')}
       <select id="oddsMin" class="nsel" aria-label="Legkisebb irodai szorzó"${rangeFlag?'':' disabled'}>${opt([1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2].map(v=>[v,num2(v)]),oddsMin)}</select>
@@ -812,8 +834,8 @@ function vTips(){
     ${hasOdds?`<details class="note"><summary><b>Mit jelentenek a számok?</b></summary>
       <p><b>Modell</b>: a modell szorzója (1 ÷ esély) és esélye. Piachoz igazításnál a modell és az irodai esély keveréke.</p>
       <p><b>Iroda</b>: az irodák átlagos szorzója (tőzsdék nélkül) és a belőle adódó esély, árréssel együtt.</p>
-      <p><b>Value</b> = esély × irodai szorzó − 1. <b>Kelly (k)</b>: a kassza hány %-át érdemes rátenni. A kis esélyű tippeket magától lefelé súlyozza. A gyakorlatban ennek a negyedét szokás megtenni.</p></details>`:''}
-    <div class="flist">${html||`<p class="muted">${valueOnly?'Nincs a feltételeknek megfelelő tipp. Próbálj kisebb küszöböt, szélesebb szorzósávot vagy hosszabb időszakot.':'Ebben az időszakban nincs meccs. Válassz hosszabb időszakot.'}</p>`}</div>
+      <p><b>Value</b> = esély × irodai szorzó − 1. <b>▼ / ▲</b>: az irodai szorzó az első letöltés óta legalább 3%-kal csökkent vagy nőtt. Zöld ▼ value tippnél: a piac is a modell irányába mozdult (megerősített). Piros ▲ value tippnél: a piac ellene mozdult, érdemes utánanézni. <b>Kelly (k)</b>: a kassza hány %-át érdemes rátenni. A kis esélyű tippeket magától lefelé súlyozza. A gyakorlatban ennek a negyedét szokás megtenni.</p></details>`:''}
+    <div class="flist">${html||`<p class="muted">${valueOnly||confOnly?'Nincs a feltételeknek megfelelő tipp. Próbálj kisebb küszöböt, szélesebb szorzósávot vagy hosszabb időszakot.':'Ebben az időszakban nincs meccs. Válassz hosszabb időszakot.'}</p>`}</div>
     ${rows.length>tipsShow?`<button class="btn" id="tipsMore">További meccsek (${rows.length-tipsShow} van még)</button>`:''}
   </section>`;
 }
@@ -1153,6 +1175,7 @@ $('#view').addEventListener('click',e=>{
   const so=e.target.closest('[data-simopen]');if(so){simOpen[so.dataset.simopen]=!simOpen[so.dataset.simopen];render();return}
   const tg=e.target.closest('[data-tg]');if(tg){const o=tg.dataset.tg==='team'?teamSer:matchSer,k=tg.dataset.k;o[k]=!o[k];store.set(tg.dataset.tg==='team'?'teamSer':'matchSer',o);render();return}
   const sb=e.target.closest('[data-sort]');if(sb){tipSort=sb.dataset.sort;store.set('tipSort',tipSort);tipsShow=40;render();return}
+  if(e.target.closest('#confOnly')){confOnly=!confOnly;store.set('confOnly',confOnly);tipsShow=40;render();return}
   if(e.target.closest('#valueOnly')){valueOnly=!valueOnly;store.set('valueOnly',valueOnly);tipsShow=40;render();return}
   if(e.target.closest('#rangeFlag')){rangeFlag=!rangeFlag;store.set('rangeFlag',rangeFlag);render();return}
   if(e.target.closest('#blendOn')){blendOn=!blendOn;blendW=blendOn?blendVal:0;store.set('blendOn',blendOn);render();return}
